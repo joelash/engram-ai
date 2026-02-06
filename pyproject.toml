@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "engram-ai"
-version = "1.0.0"
+version = "0.1.0"
 description = "Reusable semantic memory library for LangGraph agents with PostgreSQL/pgvector"
 readme = "README.md"
 license = "MIT"
@@ -72,6 +72,7 @@ version_toml = ["pyproject.toml:project.version"]
 branch = "main"
 build_command = "pip install build && python -m build"
 commit_message = "chore(release): {version} [skip ci]"
+major_on_zero = false  # Stay on 0.x until explicitly ready for 1.0
 
 [tool.semantic_release.changelog]
 changelog_file = "CHANGELOG.md"
