@@ -6,7 +6,7 @@ These tests require:
 - OPENAI_API_KEY environment variable
 """
 
-from datetime import datetime, timedelta
+from datetime import datetime, timezone, timedelta
 from uuid import uuid4
 
 import pytest
@@ -151,7 +151,7 @@ class TestSemanticMemoryStore:
         # Add expired memory
         expired_mem = Memory(
             text="Visiting Ohio",
-            valid_until=datetime.utcnow() - timedelta(days=1),
+            valid_until=datetime.now(timezone.utc) - timedelta(days=1),
         )
         semantic_store.add(test_namespace, expired_mem)
         

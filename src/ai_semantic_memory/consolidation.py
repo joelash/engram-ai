@@ -2,7 +2,7 @@
 Memory consolidation: decay, summarize, and prune old memories.
 """
 
-from datetime import datetime, timedelta
+from datetime import datetime, timezone, timedelta
 from enum import Enum
 from typing import Any
 
@@ -128,7 +128,7 @@ def _prune_expired(
     memories = store.list_all(namespace, include_expired=True)
     result.memories_processed = len(memories)
 
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
 
     for mem in memories:
         if mem.valid_until and mem.valid_until < now:
@@ -152,7 +152,7 @@ def _decay_access(
     memories = store.list_all(namespace)
     result.memories_processed = len(memories)
 
-    cutoff = datetime.utcnow() - timedelta(days=threshold_days)
+    cutoff = datetime.now(timezone.utc) - timedelta(days=threshold_days)
 
     for mem in memories:
         # Only decay episodic memories
@@ -183,7 +183,7 @@ def _summarize_groups(
     memories = store.list_all(namespace)
     result.memories_processed = len(memories)
 
-    cutoff = datetime.utcnow() - timedelta(days=older_than_days)
+    cutoff = datetime.now(timezone.utc) - timedelta(days=older_than_days)
 
     # Filter to old episodic memories
     old_episodic = [
@@ -279,7 +279,7 @@ def _summarize_group(
                 tags=["consolidated"],
                 metadata={
                     "consolidated_from": [str(m.id) for m in memories],
-                    "consolidation_date": datetime.utcnow().isoformat(),
+                    "consolidation_date": datetime.now(timezone.utc).isoformat(),
                 },
             ),
         )

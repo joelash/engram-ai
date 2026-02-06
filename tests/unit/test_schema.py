@@ -2,7 +2,7 @@
 Unit tests for schema models.
 """
 
-from datetime import datetime, timedelta
+from datetime import datetime, timezone, timedelta
 from uuid import uuid4
 
 import pytest
@@ -65,13 +65,13 @@ class TestMemory:
         mem = Memory(text="Permanent fact", valid_until=None)
         
         assert mem.is_valid()
-        assert mem.is_valid(at=datetime.utcnow() + timedelta(days=365))
+        assert mem.is_valid(at=datetime.now(timezone.utc) + timedelta(days=365))
 
     def test_memory_is_valid_expired(self):
         """Test is_valid for expired memories."""
         mem = Memory(
             text="Temporary fact",
-            valid_until=datetime.utcnow() - timedelta(days=1),
+            valid_until=datetime.now(timezone.utc) - timedelta(days=1),
         )
         
         assert not mem.is_valid()
@@ -80,7 +80,7 @@ class TestMemory:
         """Test is_valid for memories with future start date."""
         mem = Memory(
             text="Future fact",
-            valid_from=datetime.utcnow() + timedelta(days=1),
+            valid_from=datetime.now(timezone.utc) + timedelta(days=1),
         )
         
         assert not mem.is_valid()

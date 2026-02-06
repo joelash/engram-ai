@@ -3,7 +3,7 @@ PostgresStore factory with semantic search via OpenAI embeddings.
 """
 
 import os
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any
 from uuid import UUID
 
@@ -192,7 +192,7 @@ class SemanticMemoryStore:
             durability=old_memory.durability,  # Keep durability tier
             confidence=update.confidence,
             source=update.source,
-            valid_from=update.valid_from or datetime.utcnow(),
+            valid_from=update.valid_from or datetime.now(timezone.utc),
             valid_until=update.valid_until,
             supersedes=old_memory.id,
             tags=old_memory.tags,  # Inherit tags
@@ -201,7 +201,7 @@ class SemanticMemoryStore:
 
         # Mark old memory as superseded
         old_memory.superseded_by = new_memory.id
-        old_memory.superseded_at = datetime.utcnow()
+        old_memory.superseded_at = datetime.now(timezone.utc)
 
         # Store both
         self._store.put(
@@ -266,7 +266,7 @@ class SemanticMemoryStore:
         )
 
         memories: list[Memory] = []
-        check_time = query.valid_at or datetime.utcnow()
+        check_time = query.valid_at or datetime.now(timezone.utc)
 
         for result in results:
             try:
@@ -431,7 +431,7 @@ class SemanticMemoryStore:
         )
 
         memories: list[Memory] = []
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
 
         for result in results:
             try:

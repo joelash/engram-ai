@@ -2,12 +2,17 @@
 Memory schema with durability tiers, temporal awareness, and version chains.
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 from typing import Any
 from uuid import UUID, uuid4
 
 from pydantic import BaseModel, Field
+
+
+def _utc_now() -> datetime:
+    """Return current time as timezone-aware UTC datetime."""
+    return datetime.now(timezone.utc)
 
 
 class Durability(str, Enum):
@@ -55,7 +60,7 @@ class Memory(BaseModel):
     """How this memory was created."""
 
     # Temporal validity
-    valid_from: datetime = Field(default_factory=datetime.utcnow)
+    valid_from: datetime = Field(default_factory=_utc_now)
     """When this fact became true."""
 
     valid_until: datetime | None = None
@@ -72,7 +77,7 @@ class Memory(BaseModel):
     """When this memory was superseded."""
 
     # Metadata
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=_utc_now)
     """When this memory was stored."""
 
     last_accessed_at: datetime | None = None
@@ -125,12 +130,12 @@ class Memory(BaseModel):
             durability=Durability(value["durability"]),
             confidence=value.get("confidence", 0.8),
             source=MemorySource(value.get("source", "inferred")),
-            valid_from=parse_dt(value.get("valid_from")) or datetime.utcnow(),
+            valid_from=parse_dt(value.get("valid_from")) or _utc_now(),
             valid_until=parse_dt(value.get("valid_until")),
             supersedes=parse_uuid(value.get("supersedes")),
             superseded_by=parse_uuid(value.get("superseded_by")),
             superseded_at=parse_dt(value.get("superseded_at")),
-            created_at=parse_dt(value.get("created_at")) or datetime.utcnow(),
+            created_at=parse_dt(value.get("created_at")) or _utc_now(),
             last_accessed_at=parse_dt(value.get("last_accessed_at")),
             access_count=value.get("access_count", 0),
             tags=value.get("tags", []),
@@ -139,7 +144,7 @@ class Memory(BaseModel):
 
     def is_valid(self, at: datetime | None = None) -> bool:
         """Check if this memory is valid at the given time."""
-        at = at or datetime.utcnow()
+        at = at or _utc_now()
 
         # Superseded memories are not valid
         if self.superseded_by is not None:
@@ -177,7 +182,7 @@ class MemoryCreate(BaseModel):
             durability=self.durability,
             confidence=self.confidence,
             source=self.source,
-            valid_from=self.valid_from or datetime.utcnow(),
+            valid_from=self.valid_from or _utc_now(),
             valid_until=self.valid_until,
             tags=self.tags,
             metadata=self.metadata,

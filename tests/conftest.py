@@ -3,7 +3,7 @@ Pytest fixtures for ai-semantic-memory tests.
 """
 
 import os
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Generator
 from uuid import uuid4
 

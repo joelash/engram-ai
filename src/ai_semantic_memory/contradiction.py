@@ -2,7 +2,7 @@
 Contradiction detection and resolution via version chains.
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any
 
 from langchain_core.messages import HumanMessage, SystemMessage
@@ -201,7 +201,7 @@ def resolve_contradiction(
             text=new_fact,
             confidence=confidence,
             source=source,
-            valid_from=datetime.utcnow(),
+            valid_from=datetime.now(timezone.utc),
         ),
     )
 
