@@ -94,14 +94,20 @@ def postgres_container():
     """
     Start a PostgreSQL container for integration tests.
     
-    Requires: testcontainers[postgres]
+    Requires: testcontainers[postgres] and Docker with pgvector image.
+    
+    Pull the image first:
+        docker pull pgvector/pgvector:pg16
     """
     pytest.importorskip("testcontainers")
     
     from testcontainers.postgres import PostgresContainer
     
-    with PostgresContainer("pgvector/pgvector:pg16") as postgres:
-        yield postgres
+    try:
+        with PostgresContainer("pgvector/pgvector:pg16", driver="psycopg") as postgres:
+            yield postgres
+    except Exception as e:
+        pytest.skip(f"Could not start Postgres container: {e}")
 
 
 @pytest.fixture
