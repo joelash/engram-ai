@@ -31,10 +31,16 @@
             --surface: #f4f4f5;
             --border: #e4e4e7;
             --text: #18181b;
-            --text-muted: #71717a;
-            --purple: #9333ea;
-            --purple-dim: #7c3aed;
+            --text-muted: #52525b;
+            --purple: #7c3aed;
+            --purple-dim: #6d28d9;
             --green: #16a34a;
+            --code-bg: #f8f8f8;
+            --code-text: #383a42;
+            --code-keyword: #a626a4;
+            --code-string: #50a14f;
+            --code-function: #4078f2;
+            --code-comment: #a0a1a7;
         }
 
         body {
@@ -376,19 +382,44 @@
 
         /* Light mode specific adjustments */
         [data-theme="light"] .code-preview {
-            background: #1e1e1e;
-            border-color: #333;
+            background: var(--code-bg);
+            border-color: var(--border);
         }
 
         [data-theme="light"] .code-preview code {
-            color: #d4d4d4;
+            color: var(--code-text);
+        }
+
+        [data-theme="light"] .code-preview .keyword {
+            color: var(--code-keyword);
+        }
+
+        [data-theme="light"] .code-preview .string {
+            color: var(--code-string);
+        }
+
+        [data-theme="light"] .code-preview .function {
+            color: var(--code-function);
+        }
+
+        [data-theme="light"] .code-preview .comment {
+            color: var(--code-comment);
         }
 
         [data-theme="light"] .hero h1 .highlight {
-            background: linear-gradient(135deg, #9333ea 0%, #db2777 100%);
+            background: linear-gradient(135deg, #7c3aed 0%, #db2777 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
+        }
+
+        [data-theme="light"] .btn-primary {
+            background: #7c3aed;
+            color: #ffffff;
+        }
+
+        [data-theme="light"] .btn-primary:hover {
+            background: #6d28d9;
         }
 
         /* Responsive */
@@ -410,7 +441,7 @@
 <body>
     <nav>
         <div class="container">
-            <a href="/" class="logo"><img src="../assets/logo.png" alt="engram-ai" width="28" height="28"> engram<span>-ai</span></a>
+            <a href="/" class="logo"><img src="logo.png" alt="engram-ai" width="28" height="28"> engram<span>-ai</span></a>
             <div class="nav-links">
                 <a href="https://github.com/joelash/engram-ai">GitHub</a>
                 <a href="https://github.com/joelash/engram-ai#quick-start">Docs</a>
