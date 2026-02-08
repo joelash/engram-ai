@@ -26,7 +26,7 @@ Drop-in long-term memory with:
 - 📞 **Consult** ($500) — 2-hour architecture deep-dive
 - 🛠️ **Implementation** ($3-5k) — Full memory system, integrated + tested
 
-[Book a Call →](https://calendly.com/joelash/ai-memory-consult)
+[Book a Call →](https://calendar.notion.so/meet/joelfriedman/ai-memory-consult)
 
 ---
 
