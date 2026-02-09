@@ -9,11 +9,12 @@ import os
 import sqlite3
 import struct
 from pathlib import Path
-from typing import Any
-
-from langchain_openai import OpenAIEmbeddings
+from typing import TYPE_CHECKING, Any
 
 from engram_ai.backends.base import BaseStore, StoreItem
+
+if TYPE_CHECKING:
+    from langchain_core.embeddings import Embeddings
 
 DEFAULT_EMBED_MODEL = "text-embedding-3-small"
 DEFAULT_EMBED_DIMS = 1536
@@ -44,6 +45,7 @@ class SQLiteBackend(BaseStore):
     def __init__(
         self,
         db_path: str | Path,
+        embeddings: "Embeddings | None" = None,
         embed_model: str = DEFAULT_EMBED_MODEL,
         dims: int = DEFAULT_EMBED_DIMS,
         embed_fields: list[str] | None = None,
@@ -53,21 +55,23 @@ class SQLiteBackend(BaseStore):
 
         Args:
             db_path: Path to SQLite database file. Use ":memory:" for in-memory.
-            embed_model: OpenAI embedding model name.
+            embeddings: LangChain Embeddings instance. If None, uses OpenAIEmbeddings.
+            embed_model: OpenAI embedding model name (only used if embeddings is None).
             dims: Embedding dimensions.
             embed_fields: Fields to embed (default: ["text"]).
         """
         self._db_path = str(db_path)
         self._embed_model = embed_model
-        self._embeddings: OpenAIEmbeddings | None = None  # Lazy-loaded
+        self._embeddings: Embeddings | None = embeddings  # Can be pre-configured or lazy-loaded
         self._dims = dims
         self._embed_fields = embed_fields or ["text"]
         self._conn: sqlite3.Connection | None = None
         self._vec_available = False
 
-    def _get_embeddings(self) -> OpenAIEmbeddings:
-        """Lazy-load embeddings client on first use."""
+    def _get_embeddings(self) -> "Embeddings":
+        """Get embeddings client, lazy-loading OpenAI if not provided."""
         if self._embeddings is None:
+            from langchain_openai import OpenAIEmbeddings
             self._embeddings = OpenAIEmbeddings(model=self._embed_model)
         return self._embeddings
 
@@ -332,6 +336,7 @@ class SQLiteBackend(BaseStore):
 
 def build_sqlite_backend(
     db_path: str | Path | None = None,
+    embeddings: "Embeddings | None" = None,
     embed_model: str = DEFAULT_EMBED_MODEL,
     dims: int = DEFAULT_EMBED_DIMS,
     embed_fields: list[str] | None = None,
@@ -342,7 +347,8 @@ def build_sqlite_backend(
     Args:
         db_path: Path to database file. Falls back to MEMORY_DB_PATH env var
                  or "engram.db" in current directory.
-        embed_model: OpenAI embedding model.
+        embeddings: LangChain Embeddings instance. If None, uses OpenAIEmbeddings.
+        embed_model: OpenAI embedding model (only used if embeddings is None).
         dims: Embedding dimensions.
         embed_fields: Fields to embed.
 
@@ -354,6 +360,7 @@ def build_sqlite_backend(
 
     return SQLiteBackend(
         db_path=db_path,
+        embeddings=embeddings,
         embed_model=embed_model,
         dims=dims,
         embed_fields=embed_fields,

@@ -5,6 +5,7 @@ Picks the appropriate backend based on URL scheme.
 """
 
 import os
+from typing import TYPE_CHECKING
 from urllib.parse import urlparse
 
 from engram_ai.backends.base import BaseStore
@@ -12,9 +13,13 @@ from engram_ai.backends.duckdb import DuckDBBackend
 from engram_ai.backends.postgres import DEFAULT_EMBED_DIMS, DEFAULT_EMBED_MODEL, PostgresBackend
 from engram_ai.backends.sqlite import SQLiteBackend
 
+if TYPE_CHECKING:
+    from langchain_core.embeddings import Embeddings
+
 
 def build_store(
     url: str | None = None,
+    embeddings: "Embeddings | None" = None,
     embed_model: str = DEFAULT_EMBED_MODEL,
     dims: int = DEFAULT_EMBED_DIMS,
     embed_fields: list[str] | None = None,
@@ -34,7 +39,8 @@ def build_store(
 
     Args:
         url: Database URL. Scheme determines backend type.
-        embed_model: OpenAI embedding model name.
+        embeddings: LangChain Embeddings instance. If None, uses OpenAIEmbeddings.
+        embed_model: OpenAI embedding model name (only used if embeddings is None).
         dims: Embedding dimensions.
         embed_fields: Fields to embed (default: ["text"]).
 
@@ -59,6 +65,15 @@ def build_store(
         store = build_store("md:my_database")
         store = build_store("motherduck:my_database")
 
+        # With custom embeddings (AWS Bedrock)
+        from langchain_aws import BedrockEmbeddings
+        store = build_store("postgresql://...", embeddings=BedrockEmbeddings())
+
+        # With AI Gateway
+        from langchain_openai import OpenAIEmbeddings
+        embeddings = OpenAIEmbeddings(base_url="https://gateway.ai.cloudflare.com/v1/...")
+        store = build_store("postgresql://...", embeddings=embeddings)
+
         # From environment
         store = build_store()  # Uses DATABASE_URL or MEMORY_DATABASE_URL
     """
@@ -75,6 +90,7 @@ def build_store(
     if url == ":memory:":
         return SQLiteBackend(
             db_path=":memory:",
+            embeddings=embeddings,
             embed_model=embed_model,
             dims=dims,
             embed_fields=embed_fields,
@@ -87,6 +103,7 @@ def build_store(
     if scheme in ("postgresql", "postgres"):
         return PostgresBackend(
             conn_str=url,
+            embeddings=embeddings,
             embed_model=embed_model,
             dims=dims,
             embed_fields=embed_fields,
@@ -106,6 +123,7 @@ def build_store(
 
         return SQLiteBackend(
             db_path=db_path or "engram.db",
+            embeddings=embeddings,
             embed_model=embed_model,
             dims=dims,
             embed_fields=embed_fields,
@@ -116,6 +134,7 @@ def build_store(
         db_path = parsed.path
         return SQLiteBackend(
             db_path=db_path,
+            embeddings=embeddings,
             embed_model=embed_model,
             dims=dims,
             embed_fields=embed_fields,
@@ -132,6 +151,7 @@ def build_store(
 
         return DuckDBBackend(
             db_path=db_path or "engram.duckdb",
+            embeddings=embeddings,
             embed_model=embed_model,
             dims=dims,
             embed_fields=embed_fields,
@@ -142,6 +162,7 @@ def build_store(
         # Pass the full URL to DuckDB which handles MotherDuck natively
         return DuckDBBackend(
             db_path=url,
+            embeddings=embeddings,
             embed_model=embed_model,
             dims=dims,
             embed_fields=embed_fields,
@@ -153,6 +174,7 @@ def build_store(
         if url.endswith(".duckdb") or url.endswith(".ddb"):
             return DuckDBBackend(
                 db_path=url,
+                embeddings=embeddings,
                 embed_model=embed_model,
                 dims=dims,
                 embed_fields=embed_fields,
@@ -161,6 +183,7 @@ def build_store(
             # Default to SQLite
             return SQLiteBackend(
                 db_path=url,
+                embeddings=embeddings,
                 embed_model=embed_model,
                 dims=dims,
                 embed_fields=embed_fields,

@@ -7,11 +7,12 @@ Supports both local DuckDB files and MotherDuck (cloud).
 import json
 import os
 from pathlib import Path
-from typing import Any
-
-from langchain_openai import OpenAIEmbeddings
+from typing import TYPE_CHECKING, Any
 
 from engram_ai.backends.base import BaseStore, StoreItem
+
+if TYPE_CHECKING:
+    from langchain_core.embeddings import Embeddings
 
 DEFAULT_EMBED_MODEL = "text-embedding-3-small"
 DEFAULT_EMBED_DIMS = 1536
@@ -37,6 +38,7 @@ class DuckDBBackend(BaseStore):
     def __init__(
         self,
         db_path: str | Path,
+        embeddings: "Embeddings | None" = None,
         embed_model: str = DEFAULT_EMBED_MODEL,
         dims: int = DEFAULT_EMBED_DIMS,
         embed_fields: list[str] | None = None,
@@ -47,22 +49,24 @@ class DuckDBBackend(BaseStore):
 
         Args:
             db_path: Path to DuckDB file, ":memory:", or MotherDuck connection string.
-            embed_model: OpenAI embedding model name.
+            embeddings: LangChain Embeddings instance. If None, uses OpenAIEmbeddings.
+            embed_model: OpenAI embedding model name (only used if embeddings is None).
             dims: Embedding dimensions.
             embed_fields: Fields to embed (default: ["text"]).
             motherduck_token: MotherDuck API token (can also use MOTHERDUCK_TOKEN env).
         """
         self._db_path = str(db_path)
         self._embed_model = embed_model
-        self._embeddings: OpenAIEmbeddings | None = None  # Lazy-loaded
+        self._embeddings: Embeddings | None = embeddings
         self._dims = dims
         self._embed_fields = embed_fields or ["text"]
         self._motherduck_token = motherduck_token or os.environ.get("MOTHERDUCK_TOKEN")
         self._conn = None
 
-    def _get_embeddings(self) -> OpenAIEmbeddings:
-        """Lazy-load embeddings client on first use."""
+    def _get_embeddings(self) -> "Embeddings":
+        """Get embeddings client, lazy-loading OpenAI if not provided."""
         if self._embeddings is None:
+            from langchain_openai import OpenAIEmbeddings
             self._embeddings = OpenAIEmbeddings(model=self._embed_model)
         return self._embeddings
 
@@ -239,6 +243,7 @@ class DuckDBBackend(BaseStore):
 
 def build_duckdb_backend(
     db_path: str | Path | None = None,
+    embeddings: "Embeddings | None" = None,
     embed_model: str = DEFAULT_EMBED_MODEL,
     dims: int = DEFAULT_EMBED_DIMS,
     embed_fields: list[str] | None = None,
@@ -250,7 +255,8 @@ def build_duckdb_backend(
     Args:
         db_path: Path to database file, ":memory:", or MotherDuck URL.
                  Falls back to DUCKDB_PATH env var or "engram.duckdb".
-        embed_model: OpenAI embedding model.
+        embeddings: LangChain Embeddings instance. If None, uses OpenAIEmbeddings.
+        embed_model: OpenAI embedding model (only used if embeddings is None).
         dims: Embedding dimensions.
         embed_fields: Fields to embed.
         motherduck_token: MotherDuck API token.
@@ -267,12 +273,17 @@ def build_duckdb_backend(
 
         # MotherDuck cloud
         backend = build_duckdb_backend("md:my_database")
+
+        # With custom embeddings (e.g., Bedrock)
+        from langchain_aws import BedrockEmbeddings
+        backend = build_duckdb_backend("./data.duckdb", embeddings=BedrockEmbeddings())
     """
     if db_path is None:
         db_path = os.environ.get("DUCKDB_PATH", "engram.duckdb")
 
     return DuckDBBackend(
         db_path=db_path,
+        embeddings=embeddings,
         embed_model=embed_model,
         dims=dims,
         embed_fields=embed_fields,

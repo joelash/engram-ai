@@ -3,12 +3,14 @@ PostgreSQL backend using LangGraph's PostgresStore with pgvector.
 """
 
 import os
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-from langchain_openai import OpenAIEmbeddings
 from langgraph.store.postgres import PostgresStore
 
 from engram_ai.backends.base import BaseStore, StoreItem
+
+if TYPE_CHECKING:
+    from langchain_core.embeddings import Embeddings
 
 DEFAULT_EMBED_MODEL = "text-embedding-3-small"
 DEFAULT_EMBED_DIMS = 1536
@@ -24,6 +26,7 @@ class PostgresBackend(BaseStore):
     def __init__(
         self,
         conn_str: str,
+        embeddings: "Embeddings | None" = None,
         embed_model: str = DEFAULT_EMBED_MODEL,
         dims: int = DEFAULT_EMBED_DIMS,
         embed_fields: list[str] | None = None,
@@ -33,21 +36,23 @@ class PostgresBackend(BaseStore):
 
         Args:
             conn_str: PostgreSQL connection string.
-            embed_model: OpenAI embedding model name.
+            embeddings: LangChain Embeddings instance. If None, uses OpenAIEmbeddings.
+            embed_model: OpenAI embedding model name (only used if embeddings is None).
             dims: Embedding dimensions.
             embed_fields: Fields to embed (default: ["text"]).
         """
         self._conn_str = conn_str
         self._embed_model = embed_model
-        self._embeddings: OpenAIEmbeddings | None = None  # Lazy-loaded
+        self._embeddings: Embeddings | None = embeddings
         self._dims = dims
         self._embed_fields = embed_fields or ["text"]
         self._store: PostgresStore | None = None
         self._context = None
 
-    def _get_embeddings(self) -> OpenAIEmbeddings:
-        """Lazy-load embeddings client on first use."""
+    def _get_embeddings(self) -> "Embeddings":
+        """Get embeddings client, lazy-loading OpenAI if not provided."""
         if self._embeddings is None:
+            from langchain_openai import OpenAIEmbeddings
             self._embeddings = OpenAIEmbeddings(model=self._embed_model)
         return self._embeddings
 
@@ -134,6 +139,7 @@ class PostgresBackend(BaseStore):
 
 def build_postgres_backend(
     conn_str: str | None = None,
+    embeddings: "Embeddings | None" = None,
     embed_model: str = DEFAULT_EMBED_MODEL,
     dims: int = DEFAULT_EMBED_DIMS,
     embed_fields: list[str] | None = None,
@@ -143,12 +149,26 @@ def build_postgres_backend(
 
     Args:
         conn_str: Connection string. Falls back to DATABASE_URL env var.
-        embed_model: OpenAI embedding model.
+        embeddings: LangChain Embeddings instance. If None, uses OpenAIEmbeddings.
+        embed_model: OpenAI embedding model (only used if embeddings is None).
         dims: Embedding dimensions.
         embed_fields: Fields to embed.
 
     Returns:
         PostgresBackend instance.
+
+    Examples:
+        # Default (OpenAI)
+        backend = build_postgres_backend("postgresql://...")
+
+        # With AWS Bedrock
+        from langchain_aws import BedrockEmbeddings
+        backend = build_postgres_backend("postgresql://...", embeddings=BedrockEmbeddings())
+
+        # With AI Gateway (OpenAI-compatible)
+        from langchain_openai import OpenAIEmbeddings
+        embeddings = OpenAIEmbeddings(base_url="https://gateway.ai.cloudflare.com/v1/...")
+        backend = build_postgres_backend("postgresql://...", embeddings=embeddings)
     """
     conn_str = conn_str or os.environ.get("DATABASE_URL")
     if not conn_str:
@@ -156,6 +176,7 @@ def build_postgres_backend(
 
     return PostgresBackend(
         conn_str=conn_str,
+        embeddings=embeddings,
         embed_model=embed_model,
         dims=dims,
         embed_fields=embed_fields,

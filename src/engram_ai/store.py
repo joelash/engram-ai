@@ -24,12 +24,13 @@ from engram_ai.schema import (
 )
 
 if TYPE_CHECKING:
-    pass
+    from langchain_core.embeddings import Embeddings
 
 
 @contextmanager
 def build_store(
     url: str | None = None,
+    embeddings: "Embeddings | None" = None,
     embed_model: str = DEFAULT_EMBED_MODEL,
     dims: int = DEFAULT_EMBED_DIMS,
     embed_fields: list[str] | None = None,
@@ -44,7 +45,8 @@ def build_store(
 
     Args:
         url: Database URL. Falls back to DATABASE_URL env var.
-        embed_model: OpenAI embedding model name.
+        embeddings: LangChain Embeddings instance. If None, uses OpenAIEmbeddings.
+        embed_model: OpenAI embedding model name (only used if embeddings is None).
         dims: Embedding dimensions.
         embed_fields: Fields to embed. Default: ["text"].
 
@@ -62,13 +64,20 @@ def build_store(
             store.setup()
             store.add(namespace, memory)
 
-        # In-memory (testing)
-        with build_store(":memory:") as store:
+        # With custom embeddings (AWS Bedrock)
+        from langchain_aws import BedrockEmbeddings
+        with build_store("postgresql://...", embeddings=BedrockEmbeddings()) as store:
             store.setup()
-            store.add(namespace, memory)
+
+        # With AI Gateway
+        from langchain_openai import OpenAIEmbeddings
+        embeddings = OpenAIEmbeddings(base_url="https://gateway.ai.cloudflare.com/v1/...")
+        with build_store("postgresql://...", embeddings=embeddings) as store:
+            store.setup()
     """
     backend = _build_backend(
         url=url,
+        embeddings=embeddings,
         embed_model=embed_model,
         dims=dims,
         embed_fields=embed_fields,
@@ -83,6 +92,7 @@ def build_store(
 @contextmanager
 def build_postgres_store(
     conn_str: str | None = None,
+    embeddings: "Embeddings | None" = None,
     embed_model: str = DEFAULT_EMBED_MODEL,
     dims: int = DEFAULT_EMBED_DIMS,
     embed_fields: list[str] | None = None,
@@ -94,7 +104,8 @@ def build_postgres_store(
 
     Args:
         conn_str: PostgreSQL connection string. Falls back to DATABASE_URL env var.
-        embed_model: OpenAI embedding model name.
+        embeddings: LangChain Embeddings instance. If None, uses OpenAIEmbeddings.
+        embed_model: OpenAI embedding model name (only used if embeddings is None).
         dims: Embedding dimensions.
         embed_fields: Fields to embed. Default: ["text"].
 
@@ -111,6 +122,7 @@ def build_postgres_store(
 
     with build_store(
         url=conn_str,
+        embeddings=embeddings,
         embed_model=embed_model,
         dims=dims,
         embed_fields=embed_fields,
@@ -121,6 +133,7 @@ def build_postgres_store(
 @contextmanager
 def build_sqlite_store(
     db_path: str | None = None,
+    embeddings: "Embeddings | None" = None,
     embed_model: str = DEFAULT_EMBED_MODEL,
     dims: int = DEFAULT_EMBED_DIMS,
     embed_fields: list[str] | None = None,
@@ -133,7 +146,8 @@ def build_sqlite_store(
     Args:
         db_path: Path to SQLite database. Falls back to MEMORY_DB_PATH env var
                  or "engram.db".
-        embed_model: OpenAI embedding model name.
+        embeddings: LangChain Embeddings instance. If None, uses OpenAIEmbeddings.
+        embed_model: OpenAI embedding model name (only used if embeddings is None).
         dims: Embedding dimensions.
         embed_fields: Fields to embed. Default: ["text"].
 
@@ -158,6 +172,7 @@ def build_sqlite_store(
 
     with build_store(
         url=url,
+        embeddings=embeddings,
         embed_model=embed_model,
         dims=dims,
         embed_fields=embed_fields,
@@ -168,6 +183,7 @@ def build_sqlite_store(
 @contextmanager
 def build_duckdb_store(
     db_path: str | None = None,
+    embeddings: "Embeddings | None" = None,
     embed_model: str = DEFAULT_EMBED_MODEL,
     dims: int = DEFAULT_EMBED_DIMS,
     embed_fields: list[str] | None = None,
@@ -180,7 +196,8 @@ def build_duckdb_store(
     Args:
         db_path: Path to DuckDB database, ":memory:", or MotherDuck URL.
                  Falls back to DUCKDB_PATH env var or "engram.duckdb".
-        embed_model: OpenAI embedding model name.
+        embeddings: LangChain Embeddings instance. If None, uses OpenAIEmbeddings.
+        embed_model: OpenAI embedding model name (only used if embeddings is None).
         dims: Embedding dimensions.
         embed_fields: Fields to embed. Default: ["text"].
 
@@ -216,6 +233,7 @@ def build_duckdb_store(
 
     with build_store(
         url=url,
+        embeddings=embeddings,
         embed_model=embed_model,
         dims=dims,
         embed_fields=embed_fields,
