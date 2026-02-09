@@ -64,6 +64,8 @@ asyncio_mode = "auto"
 markers = [
     "unit: Unit tests (no external dependencies)",
     "integration: Integration tests (requires postgres)",
+    "slow: Slow tests (scaling benchmarks)",
+    "performance: Performance tests (require OPENAI_API_KEY)",
 ]
 
 [tool.ruff]
