@@ -13,6 +13,7 @@ from engram_ai.schema import (
     MemoryCreate,
     MemoryQuery,
     MemorySource,
+    MemoryType,
     MemoryUpdate,
 )
 
@@ -195,3 +196,141 @@ class TestMemorySource:
         assert MemorySource.EXPLICIT.value == "explicit"
         assert MemorySource.INFERRED.value == "inferred"
         assert MemorySource.SYSTEM.value == "system"
+
+
+class TestMemoryType:
+    """Tests for MemoryType enum."""
+
+    def test_memory_type_values(self):
+        """Test memory type values."""
+        assert MemoryType.FACT.value == "fact"
+        assert MemoryType.RULE.value == "rule"
+        assert MemoryType.DECISION.value == "decision"
+        assert MemoryType.PREFERENCE.value == "preference"
+        assert MemoryType.CONTEXT.value == "context"
+        assert MemoryType.OBSERVATION.value == "observation"
+
+    def test_memory_type_from_string(self):
+        """Test creating memory type from string."""
+        assert MemoryType("fact") == MemoryType.FACT
+        assert MemoryType("rule") == MemoryType.RULE
+        assert MemoryType("decision") == MemoryType.DECISION
+        assert MemoryType("preference") == MemoryType.PREFERENCE
+        assert MemoryType("context") == MemoryType.CONTEXT
+        assert MemoryType("observation") == MemoryType.OBSERVATION
+
+
+class TestMemoryWithType:
+    """Tests for Memory model with memory_type field."""
+
+    def test_memory_with_type(self):
+        """Test Memory with memory_type field."""
+        mem = Memory(
+            text="Always use TypeScript strict mode",
+            durability=Durability.CORE,
+            memory_type=MemoryType.RULE,
+        )
+
+        assert mem.memory_type == MemoryType.RULE
+
+    def test_memory_type_defaults_to_none(self):
+        """Test that memory_type defaults to None."""
+        mem = Memory(text="Test memory")
+
+        assert mem.memory_type is None
+
+    def test_memory_to_store_value_with_type(self):
+        """Test serialization includes memory_type."""
+        mem = Memory(
+            text="Chose Tailwind for CSS",
+            memory_type=MemoryType.DECISION,
+        )
+        value = mem.to_store_value()
+
+        assert value["memory_type"] == "decision"
+
+    def test_memory_to_store_value_without_type(self):
+        """Test serialization with None memory_type."""
+        mem = Memory(text="Test memory")
+        value = mem.to_store_value()
+
+        assert value["memory_type"] is None
+
+    def test_memory_from_store_value_with_type(self):
+        """Test deserialization restores memory_type."""
+        mem = Memory(
+            text="User prefers dark mode",
+            memory_type=MemoryType.PREFERENCE,
+        )
+        value = mem.to_store_value()
+        restored = Memory.from_store_value(value)
+
+        assert restored.memory_type == MemoryType.PREFERENCE
+
+    def test_memory_from_store_value_without_type(self):
+        """Test deserialization handles missing memory_type."""
+        # Simulate old data without memory_type field
+        value = {
+            "id": str(uuid4()),
+            "text": "Old memory without type",
+            "durability": "core",
+            "confidence": 0.8,
+            "source": "inferred",
+            # no memory_type field
+        }
+        restored = Memory.from_store_value(value)
+
+        assert restored.memory_type is None
+
+
+class TestMemoryCreateWithType:
+    """Tests for MemoryCreate with memory_type."""
+
+    def test_memory_create_with_type(self):
+        """Test MemoryCreate with memory_type."""
+        mc = MemoryCreate(
+            text="API rate limit is 100/min",
+            durability=Durability.SITUATIONAL,
+            memory_type=MemoryType.FACT,
+        )
+
+        assert mc.memory_type == MemoryType.FACT
+
+    def test_memory_create_to_memory_preserves_type(self):
+        """Test that to_memory() preserves memory_type."""
+        mc = MemoryCreate(
+            text="Currently refactoring auth module",
+            memory_type=MemoryType.CONTEXT,
+        )
+        mem = mc.to_memory()
+
+        assert mem.memory_type == MemoryType.CONTEXT
+
+
+class TestMemoryQueryWithType:
+    """Tests for MemoryQuery with memory_type filter."""
+
+    def test_memory_query_with_type_filter(self):
+        """Test MemoryQuery with memory_type filter."""
+        query = MemoryQuery(
+            query="coding standards",
+            memory_type=[MemoryType.RULE],
+        )
+
+        assert query.memory_type == [MemoryType.RULE]
+
+    def test_memory_query_with_multiple_types(self):
+        """Test MemoryQuery with multiple memory types."""
+        query = MemoryQuery(
+            query="project decisions",
+            memory_type=[MemoryType.DECISION, MemoryType.RULE],
+        )
+
+        assert MemoryType.DECISION in query.memory_type
+        assert MemoryType.RULE in query.memory_type
+
+    def test_memory_query_type_defaults_to_none(self):
+        """Test that memory_type filter defaults to None (no filter)."""
+        query = MemoryQuery(query="test")
+
+        assert query.memory_type is None

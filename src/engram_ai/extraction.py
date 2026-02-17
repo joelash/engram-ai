@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING, Any
 from langchain_core.messages import BaseMessage, HumanMessage, SystemMessage
 from pydantic import BaseModel, Field
 
-from engram_ai.schema import Durability, MemoryCreate, MemorySource
+from engram_ai.schema import Durability, MemoryCreate, MemorySource, MemoryType
 
 if TYPE_CHECKING:
     from langchain_core.language_models import BaseChatModel
@@ -26,6 +26,9 @@ class ExtractedFact(BaseModel):
 
     durability: Durability
     """Suggested durability tier."""
+
+    memory_type: MemoryType | None = None
+    """Semantic type of memory (fact, rule, decision, preference, etc.)."""
 
     confidence: float = Field(ge=0.0, le=1.0)
     """Confidence in this extraction (0-1)."""
@@ -61,6 +64,14 @@ For each fact, classify its durability:
 - "situational": Temporary context with a natural end (trips, projects, temporary states)
 - "episodic": Things that happened or were discussed (meetings, decisions, events)
 
+Also classify the semantic memory_type:
+- "fact": A factual statement (e.g., "API rate limit is 100/min", "User lives in Chicago")
+- "rule": A rule or guideline to follow (e.g., "Always use TypeScript strict mode")
+- "decision": A decision that was made (e.g., "Chose Tailwind for utility-first CSS")
+- "preference": A preference or like/dislike (e.g., "Prefers dark mode", "Dislikes meetings before 10am")
+- "context": Background context (e.g., "Currently working on authentication refactor")
+- "observation": An observation or insight (e.g., "User tends to ask follow-up questions")
+
 For situational facts, estimate how many days until they expire (valid_days).
 
 Return a JSON object with this structure:
@@ -69,18 +80,29 @@ Return a JSON object with this structure:
     {
       "text": "User's name is Joel",
       "durability": "core",
+      "memory_type": "fact",
       "confidence": 0.95,
       "valid_days": null,
       "category": "biographical",
       "reasoning": "Explicit self-identification"
     },
     {
-      "text": "User is visiting brother in Ohio this week",
-      "durability": "situational",
+      "text": "User prefers Fahrenheit over Celsius",
+      "durability": "core",
+      "memory_type": "preference",
       "confidence": 0.9,
-      "valid_days": 7,
-      "category": "travel",
-      "reasoning": "Temporary travel context with implicit duration"
+      "valid_days": null,
+      "category": "preferences",
+      "reasoning": "Explicit preference statement"
+    },
+    {
+      "text": "Decided to use LangGraph for the agent framework",
+      "durability": "situational",
+      "memory_type": "decision",
+      "confidence": 0.85,
+      "valid_days": 90,
+      "category": "technical",
+      "reasoning": "Project-level technical decision"
     }
   ]
 }
@@ -248,6 +270,7 @@ class MemoryExtractor:
                 MemoryCreate(
                     text=fact.text,
                     durability=fact.durability,
+                    memory_type=fact.memory_type,
                     confidence=fact.confidence,
                     source=MemorySource.INFERRED,
                     valid_until=valid_until,

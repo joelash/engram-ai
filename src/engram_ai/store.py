@@ -465,6 +465,11 @@ class SemanticMemoryStore:
             if query.durability and memory.durability not in query.durability:
                 continue
 
+            if query.memory_type and (
+                memory.memory_type is None or memory.memory_type not in query.memory_type
+            ):
+                continue
+
             if query.tags and not any(t in memory.tags for t in query.tags):
                 continue
 

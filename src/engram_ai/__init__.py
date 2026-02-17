@@ -12,6 +12,7 @@ from engram_ai.schema import (
     MemoryCreate,
     MemoryQuery,
     MemorySource,
+    MemoryType,
     MemoryUpdate,
 )
 from engram_ai.store import (
@@ -39,4 +40,5 @@ __all__ = [
     "MemoryQuery",
     "Durability",
     "MemorySource",
+    "MemoryType",
 ]

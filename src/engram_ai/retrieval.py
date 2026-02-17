@@ -5,7 +5,7 @@ Memory retrieval with recency weighting and context formatting.
 from datetime import UTC, datetime
 from typing import Any
 
-from engram_ai.schema import Durability, Memory, MemoryQuery
+from engram_ai.schema import Durability, Memory, MemoryQuery, MemoryType
 from engram_ai.store import SemanticMemoryStore
 
 
@@ -54,6 +54,8 @@ class RetrievalResult:
 
             if include_metadata:
                 meta_parts = [f"[{mem.durability.value}]"]
+                if mem.memory_type:
+                    meta_parts.append(f"[{mem.memory_type.value}]")
                 if mem.confidence < 1.0:
                     meta_parts.append(f"conf={mem.confidence:.0%}")
                 line += f" {' '.join(meta_parts)}"
@@ -73,6 +75,7 @@ class RetrievalResult:
             {
                 "text": m.text,
                 "durability": m.durability.value,
+                "memory_type": m.memory_type.value if m.memory_type else None,
                 "confidence": m.confidence,
                 "created_at": m.created_at.isoformat(),
             }
@@ -87,6 +90,7 @@ def retrieve_memories(
     limit: int = 10,
     min_confidence: float = 0.0,
     durability_filter: list[Durability] | None = None,
+    memory_type_filter: list[MemoryType] | None = None,
     scope: str = "memories",
     org_id: str | None = None,
     include_org_shared: bool = True,
@@ -102,6 +106,7 @@ def retrieve_memories(
         limit: Maximum results.
         min_confidence: Minimum confidence threshold.
         durability_filter: Only return specific durability tiers.
+        memory_type_filter: Only return specific memory types (fact, rule, etc.).
         scope: Memory scope (e.g., "memories", "preferences").
         org_id: Organization ID for scoped namespaces.
         include_org_shared: Also search org-level shared memories.
@@ -128,6 +133,7 @@ def retrieve_memories(
         limit=limit,
         min_confidence=min_confidence,
         durability=durability_filter,
+        memory_type=memory_type_filter,
     )
 
     # Search across scopes

@@ -3,6 +3,7 @@ Unit tests for retrieval module.
 """
 
 from engram_ai.retrieval import RetrievalResult, build_memory_context
+from engram_ai.schema import Durability, Memory, MemoryType
 
 
 class TestRetrievalResult:
@@ -65,6 +66,45 @@ class TestRetrievalResult:
         assert dicts[0]["durability"] == "core"
         assert "confidence" in dicts[0]
         assert "created_at" in dicts[0]
+
+    def test_context_string_with_memory_type_metadata(self):
+        """Test context string shows memory_type in metadata."""
+        memories = [
+            Memory(
+                text="Always use TypeScript strict mode",
+                durability=Durability.CORE,
+                memory_type=MemoryType.RULE,
+            )
+        ]
+        result = RetrievalResult(memories=memories, query="test")
+        context = result.as_context_string(include_metadata=True)
+
+        assert "[core]" in context
+        assert "[rule]" in context
+
+    def test_as_dict_list_includes_memory_type(self):
+        """Test dict list includes memory_type."""
+        memories = [
+            Memory(
+                text="Chose React for the frontend",
+                durability=Durability.SITUATIONAL,
+                memory_type=MemoryType.DECISION,
+            )
+        ]
+        result = RetrievalResult(memories=memories, query="test")
+        dicts = result.as_dict_list()
+
+        assert dicts[0]["memory_type"] == "decision"
+
+    def test_as_dict_list_memory_type_none(self):
+        """Test dict list handles None memory_type."""
+        memories = [
+            Memory(text="Simple fact without type")
+        ]
+        result = RetrievalResult(memories=memories, query="test")
+        dicts = result.as_dict_list()
+
+        assert dicts[0]["memory_type"] is None
 
 
 class TestBuildMemoryContext:

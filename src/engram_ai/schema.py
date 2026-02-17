@@ -28,6 +28,28 @@ class Durability(StrEnum):
     """Things that happened, decays over time (conversations, events)."""
 
 
+class MemoryType(StrEnum):
+    """Semantic type of memory content."""
+
+    FACT = "fact"
+    """A factual statement (e.g., 'API rate limit is 100/min')."""
+
+    RULE = "rule"
+    """A rule or guideline to follow (e.g., 'Always use TypeScript strict mode')."""
+
+    DECISION = "decision"
+    """A decision that was made (e.g., 'Chose Tailwind for utility-first CSS')."""
+
+    PREFERENCE = "preference"
+    """A preference or like/dislike (e.g., 'Prefers dark mode')."""
+
+    CONTEXT = "context"
+    """Background context (e.g., 'Currently working on authentication refactor')."""
+
+    OBSERVATION = "observation"
+    """An observation or insight (e.g., 'User tends to ask follow-up questions')."""
+
+
 class MemorySource(StrEnum):
     """How the memory was created."""
 
@@ -58,6 +80,9 @@ class Memory(BaseModel):
 
     source: MemorySource = MemorySource.INFERRED
     """How this memory was created."""
+
+    memory_type: MemoryType | None = None
+    """Semantic type of this memory (fact, rule, decision, etc.)."""
 
     # Temporal validity
     valid_from: datetime = Field(default_factory=_utc_now)
@@ -100,6 +125,7 @@ class Memory(BaseModel):
             "durability": self.durability.value,
             "confidence": self.confidence,
             "source": self.source.value,
+            "memory_type": self.memory_type.value if self.memory_type else None,
             "valid_from": self.valid_from.isoformat() if self.valid_from else None,
             "valid_until": self.valid_until.isoformat() if self.valid_until else None,
             "supersedes": str(self.supersedes) if self.supersedes else None,
@@ -124,12 +150,16 @@ class Memory(BaseModel):
         def parse_uuid(v: str | None) -> UUID | None:
             return UUID(v) if v else None
 
+        def parse_memory_type(v: str | None) -> MemoryType | None:
+            return MemoryType(v) if v else None
+
         return cls(
             id=UUID(value["id"]),
             text=value["text"],
             durability=Durability(value["durability"]),
             confidence=value.get("confidence", 0.8),
             source=MemorySource(value.get("source", "inferred")),
+            memory_type=parse_memory_type(value.get("memory_type")),
             valid_from=parse_dt(value.get("valid_from")) or _utc_now(),
             valid_until=parse_dt(value.get("valid_until")),
             supersedes=parse_uuid(value.get("supersedes")),
@@ -170,6 +200,7 @@ class MemoryCreate(BaseModel):
     durability: Durability = Durability.EPISODIC
     confidence: float = Field(default=0.8, ge=0.0, le=1.0)
     source: MemorySource = MemorySource.INFERRED
+    memory_type: MemoryType | None = None
     valid_from: datetime | None = None
     valid_until: datetime | None = None
     tags: list[str] = Field(default_factory=list)
@@ -182,6 +213,7 @@ class MemoryCreate(BaseModel):
             durability=self.durability,
             confidence=self.confidence,
             source=self.source,
+            memory_type=self.memory_type,
             valid_from=self.valid_from or _utc_now(),
             valid_until=self.valid_until,
             tags=self.tags,
@@ -213,6 +245,9 @@ class MemoryQuery(BaseModel):
 
     durability: list[Durability] | None = None
     """Filter by durability tier(s)."""
+
+    memory_type: list[MemoryType] | None = None
+    """Filter by memory type(s) (fact, rule, decision, etc.)."""
 
     include_superseded: bool = False
     """Include superseded (old version) memories."""
