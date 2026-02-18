@@ -202,6 +202,46 @@ OPENAI_API_KEY=sk-...           # For embeddings
 DATABASE_URL=postgresql://...    # Postgres connection
 ```
 
+## Multi-Tenant / Schema Isolation
+
+For multi-tenant deployments where each customer needs isolated data, you can use PostgreSQL schemas:
+
+```python
+from engram_ai import build_store
+
+# Each tenant gets their own schema
+with build_store("postgresql://...", schema="customer_123") as store:
+    store.setup()  # Creates tables in customer_123 schema
+    store.add(namespace, memory)
+```
+
+**Requirements:**
+- The schema must already exist in the database (`CREATE SCHEMA customer_123;`)
+- Tables will be created within that schema when `setup()` is called
+- Each schema has its own isolated set of tables
+
+### Database Tables
+
+engram-ai uses LangGraph's PostgresStore under the hood, which creates:
+
+| Table | Purpose |
+|-------|---------|
+| `store` | Memory documents with metadata |
+| `store_vectors` | pgvector embeddings for semantic search |
+| `store_migrations` | Migration version tracking |
+
+**Note:** Table names are currently fixed by LangGraph. If you need custom table names (e.g., prefixes/suffixes), use schema-based isolation instead, or run each app in a separate PostgreSQL schema.
+
+**Alternative pattern:** For apps that already use schema-per-tenant, you could combine with a suffix:
+```sql
+-- Example: customer schemas with memory suffix
+CREATE SCHEMA customer_123_memories;
+```
+```python
+with build_store("postgresql://...", schema="customer_123_memories") as store:
+    store.setup()
+```
+
 ## License
 
 MIT
