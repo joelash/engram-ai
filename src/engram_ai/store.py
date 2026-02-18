@@ -34,6 +34,7 @@ def build_store(
     embed_model: str = DEFAULT_EMBED_MODEL,
     dims: int = DEFAULT_EMBED_DIMS,
     embed_fields: list[str] | None = None,
+    schema: str | None = None,
 ) -> Iterator["SemanticMemoryStore"]:
     """
     Create a SemanticMemoryStore with automatic backend selection.
@@ -49,6 +50,8 @@ def build_store(
         embed_model: OpenAI embedding model name (only used if embeddings is None).
         dims: Embedding dimensions.
         embed_fields: Fields to embed. Default: ["text"].
+        schema: PostgreSQL schema name for tenant isolation (only for postgres).
+                The schema must already exist in the database.
 
     Yields:
         SemanticMemoryStore instance.
@@ -74,6 +77,11 @@ def build_store(
         embeddings = OpenAIEmbeddings(base_url="https://gateway.ai.cloudflare.com/v1/...")
         with build_store("postgresql://...", embeddings=embeddings) as store:
             store.setup()
+
+        # With schema-based tenant isolation (PostgreSQL only)
+        with build_store("postgresql://...", schema="customer_123") as store:
+            store.setup()  # Creates tables in customer_123 schema
+            store.add(namespace, memory)
     """
     backend = _build_backend(
         url=url,
@@ -81,6 +89,7 @@ def build_store(
         embed_model=embed_model,
         dims=dims,
         embed_fields=embed_fields,
+        schema=schema,
     )
     try:
         yield SemanticMemoryStore(backend)
@@ -96,6 +105,7 @@ def build_postgres_store(
     embed_model: str = DEFAULT_EMBED_MODEL,
     dims: int = DEFAULT_EMBED_DIMS,
     embed_fields: list[str] | None = None,
+    schema: str | None = None,
 ) -> Iterator["SemanticMemoryStore"]:
     """
     Create a SemanticMemoryStore backed by PostgreSQL.
@@ -108,9 +118,20 @@ def build_postgres_store(
         embed_model: OpenAI embedding model name (only used if embeddings is None).
         dims: Embedding dimensions.
         embed_fields: Fields to embed. Default: ["text"].
+        schema: PostgreSQL schema name for tenant isolation.
+                The schema must already exist in the database.
 
     Yields:
         SemanticMemoryStore instance.
+
+    Examples:
+        # Basic usage
+        with build_postgres_store("postgresql://user:pass@host/db") as store:
+            store.setup()
+
+        # With schema-based tenant isolation
+        with build_postgres_store("postgresql://...", schema="customer_123") as store:
+            store.setup()  # Creates tables in customer_123 schema
     """
     conn_str = conn_str or os.environ.get("DATABASE_URL")
     if not conn_str:
@@ -126,6 +147,7 @@ def build_postgres_store(
         embed_model=embed_model,
         dims=dims,
         embed_fields=embed_fields,
+        schema=schema,
     ) as store:
         yield store
 

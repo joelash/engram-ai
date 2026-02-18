@@ -3,6 +3,7 @@ PostgreSQL backend using LangGraph's PostgresStore with pgvector.
 """
 
 import os
+from urllib.parse import parse_qs, urlencode, urlparse, urlunparse
 from typing import TYPE_CHECKING, Any
 
 from langgraph.store.postgres import PostgresStore
@@ -16,11 +17,48 @@ DEFAULT_EMBED_MODEL = "text-embedding-3-small"
 DEFAULT_EMBED_DIMS = 1536
 
 
+def _add_schema_to_conn_string(conn_str: str, schema: str) -> str:
+    """
+    Add search_path option to a PostgreSQL connection string.
+
+    Args:
+        conn_str: Original connection string.
+        schema: PostgreSQL schema name.
+
+    Returns:
+        Connection string with search_path set.
+
+    Example:
+        >>> _add_schema_to_conn_string("postgresql://user:pass@host/db", "customer_123")
+        'postgresql://user:pass@host/db?options=-c%20search_path%3Dcustomer_123'
+    """
+    parsed = urlparse(conn_str)
+    query_params = parse_qs(parsed.query)
+
+    # Build the search_path option
+    search_path_option = f"-c search_path={schema}"
+
+    # Merge with existing options if any
+    if "options" in query_params:
+        existing = query_params["options"][0]
+        query_params["options"] = [f"{existing} {search_path_option}"]
+    else:
+        query_params["options"] = [search_path_option]
+
+    # Rebuild the URL
+    new_query = urlencode(query_params, doseq=True)
+    new_parsed = parsed._replace(query=new_query)
+    return urlunparse(new_parsed)
+
+
 class PostgresBackend(BaseStore):
     """
     PostgreSQL backend with pgvector for semantic search.
 
     Uses LangGraph's PostgresStore under the hood.
+
+    Supports schema-based isolation for multi-tenant deployments via the
+    `schema` parameter, which sets the PostgreSQL search_path.
     """
 
     def __init__(
@@ -30,6 +68,7 @@ class PostgresBackend(BaseStore):
         embed_model: str = DEFAULT_EMBED_MODEL,
         dims: int = DEFAULT_EMBED_DIMS,
         embed_fields: list[str] | None = None,
+        schema: str | None = None,
     ):
         """
         Initialize PostgreSQL backend.
@@ -40,12 +79,22 @@ class PostgresBackend(BaseStore):
             embed_model: OpenAI embedding model name (only used if embeddings is None).
             dims: Embedding dimensions.
             embed_fields: Fields to embed (default: ["text"]).
+            schema: PostgreSQL schema name for isolation (sets search_path).
+
+        Note:
+            When using `schema`, the schema must already exist in the database.
+            Tables will be created in that schema when `setup()` is called.
         """
+        # Apply schema to connection string if provided
+        if schema:
+            conn_str = _add_schema_to_conn_string(conn_str, schema)
+
         self._conn_str = conn_str
         self._embed_model = embed_model
         self._embeddings: Embeddings | None = embeddings
         self._dims = dims
         self._embed_fields = embed_fields or ["text"]
+        self._schema = schema
         self._store: PostgresStore | None = None
         self._context = None
 
@@ -143,6 +192,7 @@ def build_postgres_backend(
     embed_model: str = DEFAULT_EMBED_MODEL,
     dims: int = DEFAULT_EMBED_DIMS,
     embed_fields: list[str] | None = None,
+    schema: str | None = None,
 ) -> PostgresBackend:
     """
     Create a PostgreSQL backend.
@@ -153,6 +203,7 @@ def build_postgres_backend(
         embed_model: OpenAI embedding model (only used if embeddings is None).
         dims: Embedding dimensions.
         embed_fields: Fields to embed.
+        schema: PostgreSQL schema name for tenant isolation (sets search_path).
 
     Returns:
         PostgresBackend instance.
@@ -169,6 +220,9 @@ def build_postgres_backend(
         from langchain_openai import OpenAIEmbeddings
         embeddings = OpenAIEmbeddings(base_url="https://gateway.ai.cloudflare.com/v1/...")
         backend = build_postgres_backend("postgresql://...", embeddings=embeddings)
+
+        # With schema-based tenant isolation
+        backend = build_postgres_backend("postgresql://...", schema="customer_123")
     """
     conn_str = conn_str or os.environ.get("DATABASE_URL")
     if not conn_str:
@@ -180,4 +234,5 @@ def build_postgres_backend(
         embed_model=embed_model,
         dims=dims,
         embed_fields=embed_fields,
+        schema=schema,
     )

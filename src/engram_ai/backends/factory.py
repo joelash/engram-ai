@@ -23,6 +23,7 @@ def build_store(
     embed_model: str = DEFAULT_EMBED_MODEL,
     dims: int = DEFAULT_EMBED_DIMS,
     embed_fields: list[str] | None = None,
+    schema: str | None = None,
 ) -> BaseStore:
     """
     Create a storage backend based on URL scheme.
@@ -43,6 +44,7 @@ def build_store(
         embed_model: OpenAI embedding model name (only used if embeddings is None).
         dims: Embedding dimensions.
         embed_fields: Fields to embed (default: ["text"]).
+        schema: PostgreSQL schema name for tenant isolation (only for postgres).
 
     Returns:
         Configured BaseStore instance.
@@ -73,6 +75,9 @@ def build_store(
         from langchain_openai import OpenAIEmbeddings
         embeddings = OpenAIEmbeddings(base_url="https://gateway.ai.cloudflare.com/v1/...")
         store = build_store("postgresql://...", embeddings=embeddings)
+
+        # With schema-based tenant isolation (PostgreSQL only)
+        store = build_store("postgresql://...", schema="customer_123")
 
         # From environment
         store = build_store()  # Uses DATABASE_URL or MEMORY_DATABASE_URL
@@ -107,6 +112,7 @@ def build_store(
             embed_model=embed_model,
             dims=dims,
             embed_fields=embed_fields,
+            schema=schema,
         )
 
     elif scheme == "sqlite":
