@@ -53,7 +53,7 @@ const mcpCode = `<span class="token-comment">// Zero-config: memories stored loc
   <span class="token-string">"mcpServers"</span>: {
     <span class="token-string">"memento"</span>: {
       <span class="token-string">"command"</span>: <span class="token-string">"npx"</span>,
-      <span class="token-string">"args"</span>: [<span class="token-string">"memento-mcp"</span>],
+      <span class="token-string">"args"</span>: [<span class="token-string">"memento-ai-mcp"</span>],
       <span class="token-string">"env"</span>: {
         <span class="token-string">"OPENAI_API_KEY"</span>: <span class="token-string">"sk-..."</span>
       }
