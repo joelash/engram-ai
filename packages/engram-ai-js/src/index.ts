@@ -63,3 +63,8 @@ export {
 } from './embeddings.js';
 
 export type { OpenAIEmbeddingsConfig } from './embeddings.js';
+
+// SQLite store (for local/MCP use)
+export { createSQLiteStore, SQLiteMemoryStore } from './sqlite-store.js';
+
+export type { SQLiteMemoryStoreConfig } from './sqlite-store.js';

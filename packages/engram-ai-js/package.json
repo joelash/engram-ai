@@ -6,6 +6,9 @@
   "main": "./dist/index.js",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
+  "bin": {
+    "engram-ai-mcp": "./dist/mcp/cli.js"
+  },
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -14,6 +17,10 @@
     "./mcp": {
       "types": "./dist/mcp/index.d.ts",
       "import": "./dist/mcp/index.js"
+    },
+    "./sqlite": {
+      "types": "./dist/sqlite-store.d.ts",
+      "import": "./dist/sqlite-store.js"
     }
   },
   "files": [
@@ -30,6 +37,7 @@
     "prepublishOnly": "npm run build"
   },
   "dependencies": {
+    "sql.js": "^1.14.1",
     "uuid": "^11.1.0"
   },
   "peerDependencies": {
@@ -48,6 +56,7 @@
     "@neondatabase/serverless": "^1.0.2",
     "@types/node": "^22.15.3",
     "@types/pg": "^8.15.4",
+    "@types/sql.js": "^1.4.9",
     "@types/uuid": "^10.0.0",
     "pg": "^8.16.0",
     "tsup": "^8.5.0",
@@ -62,7 +71,9 @@
     "langgraph",
     "langchain",
     "embeddings",
-    "pgvector"
+    "pgvector",
+    "sqlite",
+    "mcp"
   ],
   "author": "Joel Friedman",
   "license": "MIT",

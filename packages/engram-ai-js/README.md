@@ -4,13 +4,61 @@ Long-term semantic memory for AI agents. TypeScript implementation compatible wi
 
 ## Features
 
-- **Semantic search** via pgvector embeddings
+- **Zero-config MCP** — just `npx engram-ai-mcp` with Claude Desktop/Cursor
+- **SQLite local storage** — no database setup required
+- **Postgres support** — scale up when you need it
+- **Semantic search** — find memories by meaning, not keywords
 - **Durability tiers** — core facts vs situational context vs episodic memories
-- **Memory types** — facts, rules, decisions, preferences, context, observations
 - **Version chains** — audit trail for memory updates
-- **Temporal validity** — memories can expire
-- **MCP support** — works with Claude Desktop, Cursor, etc.
 - **Cross-language** — shares schema with Python engram-ai
+
+## Quick Start: MCP Server
+
+Add memory to Claude Desktop, Cursor, or any MCP tool — **zero config**:
+
+```json
+{
+  "mcpServers": {
+    "engram": {
+      "command": "npx",
+      "args": ["engram-ai-mcp"],
+      "env": {
+        "OPENAI_API_KEY": "sk-..."
+      }
+    }
+  }
+}
+```
+
+That's it! Memories are stored locally in `~/.engram/memories.db`.
+
+### MCP with Postgres (optional)
+
+For cloud sync or multi-device, add `DATABASE_URL`:
+
+```json
+{
+  "mcpServers": {
+    "engram": {
+      "command": "npx",
+      "args": ["engram-ai-mcp"],
+      "env": {
+        "DATABASE_URL": "postgresql://...",
+        "OPENAI_API_KEY": "sk-..."
+      }
+    }
+  }
+}
+```
+
+### MCP Tools
+
+| Tool | Description |
+|------|-------------|
+| `remember` | Store a new memory |
+| `recall` | Search memories by semantic similarity |
+| `list_memories` | List all memories with optional filters |
+| `forget` | Delete a memory by ID |
 
 ## Installation
 
@@ -20,20 +68,18 @@ npm install engram-ai
 pnpm add engram-ai
 ```
 
-## Quick Start
+## Programmatic Usage
+
+### SQLite (Zero Config)
 
 ```typescript
-import { neon } from '@neondatabase/serverless';
-import { createMemoryStore, openaiEmbeddings, Durability, MemoryType } from 'engram-ai';
+import { SQLiteMemoryStore, openaiEmbeddings, Durability, MemoryType } from 'engram-ai';
 
-// Create store with Neon serverless
-const sql = neon(process.env.DATABASE_URL!);
-const store = createMemoryStore({
-  sql,
+const store = new SQLiteMemoryStore({
   embeddings: openaiEmbeddings({ apiKey: process.env.OPENAI_API_KEY }),
+  // dbPath: '~/.engram/memories.db'  // optional, this is the default
 });
 
-// Run migrations (once)
 await store.setup();
 
 // Add a memory
@@ -47,6 +93,30 @@ await store.add(['user_123', 'preferences'], {
 const memories = await store.search(['user_123', 'preferences'], {
   query: 'UI settings',
   limit: 5,
+});
+
+// Don't forget to close
+store.close();
+```
+
+### Postgres (Neon Serverless)
+
+```typescript
+import { neon } from '@neondatabase/serverless';
+import { MemoryStore, openaiEmbeddings, Durability, MemoryType } from 'engram-ai';
+
+const sql = neon(process.env.DATABASE_URL!);
+const store = new MemoryStore({
+  sql,
+  embeddings: openaiEmbeddings({ apiKey: process.env.OPENAI_API_KEY }),
+});
+
+await store.setup();
+
+// Same API as SQLite
+await store.add(['user_123'], {
+  text: 'User prefers dark mode',
+  durability: Durability.CORE,
 });
 ```
 
@@ -73,46 +143,6 @@ const embeddings: EmbeddingsProvider = {
 };
 ```
 
-## MCP Server
-
-Expose memories to Claude Desktop, Cursor, and other MCP-compatible tools:
-
-```typescript
-import { createMcpServer } from 'engram-ai/mcp';
-import { createMemoryStore, openaiEmbeddings } from 'engram-ai';
-import { neon } from '@neondatabase/serverless';
-
-const store = createMemoryStore({
-  sql: neon(process.env.DATABASE_URL!),
-  embeddings: openaiEmbeddings(),
-});
-
-const server = createMcpServer({ 
-  store,
-  defaultNamespace: ['user_123'],
-});
-
-// Handle MCP messages (e.g., from stdio transport)
-const response = await server.handleMessage({
-  jsonrpc: '2.0',
-  id: 1,
-  method: 'tools/call',
-  params: {
-    name: 'remember',
-    arguments: { text: 'User prefers TypeScript', type: 'preference' },
-  },
-});
-```
-
-### MCP Tools
-
-| Tool | Description |
-|------|-------------|
-| `remember` | Store a new memory |
-| `recall` | Search memories by semantic similarity |
-| `list_memories` | List all memories with optional filters |
-| `forget` | Delete a memory by ID |
-
 ## Schema
 
 Memories have the following structure:
@@ -133,6 +163,15 @@ interface Memory {
   metadata: Record<string, unknown>;
 }
 ```
+
+## Environment Variables
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `OPENAI_API_KEY` | Required for embeddings | — |
+| `DATABASE_URL` | Postgres connection (optional) | Uses SQLite |
+| `ENGRAM_DB_PATH` | Custom SQLite path | `~/.engram/memories.db` |
+| `ENGRAM_NAMESPACE` | Default namespace (comma-separated) | `default` |
 
 ## Cross-Language Compatibility
 

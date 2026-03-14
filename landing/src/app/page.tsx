@@ -289,6 +289,22 @@ export default function Home() {
               </div>
             ))}
           </motion.div>
+
+          {/* Hosted option CTA */}
+          <motion.div 
+            variants={fadeInUp} 
+            className="mt-12 p-6 rounded-xl border border-dashed border-[var(--border)] bg-[var(--surface)]/50 max-w-lg mx-auto"
+          >
+            <p className="text-[var(--muted)] text-sm mb-3">
+              Don&apos;t want to manage your own database?
+            </p>
+            <a
+              href="mailto:joel@friedman.xyz?subject=Interested%20in%20hosted%20engram-ai&body=I%27m%20interested%20in%20a%20hosted%20version%20of%20engram-ai.%0A%0AMy%20use%20case%3A%20"
+              className="inline-flex items-center gap-2 text-purple-400 hover:text-purple-300 text-sm font-medium transition-colors"
+            >
+              Interested in a hosted option? Let me know <ArrowRight className="w-4 h-4" />
+            </a>
+          </motion.div>
         </AnimatedSection>
       </section>
 
