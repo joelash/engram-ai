@@ -1,5 +1,7 @@
 "use client";
 
+const basePath = process.env.NEXT_PUBLIC_BASE_PATH || "";
+
 import { AnimatedGradientText } from "@/components/ui/animated-gradient-text";
 import { BentoCard, BentoGrid } from "@/components/ui/bento-grid";
 import { CodeTabs } from "@/components/ui/code-tabs";
@@ -184,7 +186,7 @@ export default function Home() {
             className="mt-16 max-w-2xl mx-auto"
           >
             <img
-              src="/memento-hero.png"
+              src={`${basePath}/memento-hero.png`}
               alt="Remember - memento-ai"
               className="rounded-2xl shadow-2xl shadow-purple-500/20 border border-[var(--border)]"
             />
