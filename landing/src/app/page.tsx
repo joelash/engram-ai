@@ -115,9 +115,11 @@ export default function Home() {
       <nav className="fixed top-0 w-full z-50 border-b border-[var(--border)] bg-[var(--background)]/80 backdrop-blur-sm">
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
           <a href="/" className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-orange-500 to-amber-500 flex items-center justify-center">
-              <span className="text-white text-lg">🐘</span>
-            </div>
+            <img 
+              src={`${basePath}/memable-icon.png`} 
+              alt="memable" 
+              className="w-8 h-8 rounded-lg"
+            />
             <span className="font-semibold text-lg text-[var(--foreground)]">
               mem<span className="text-orange-500">able</span>
             </span>
