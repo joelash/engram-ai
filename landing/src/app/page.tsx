@@ -7,6 +7,7 @@ import { BentoCard, BentoGrid } from "@/components/ui/bento-grid";
 import { CodeTabs } from "@/components/ui/code-tabs";
 import { ShimmerButton } from "@/components/ui/shimmer-button";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
+import { useTheme } from "@/hooks/use-theme";
 import { motion, useInView } from "framer-motion";
 import {
   Brain,
@@ -25,31 +26,33 @@ import {
   GraduationCap,
   Gamepad2,
   ShoppingCart,
+  Wand2,
 } from "lucide-react";
 import { useRef } from "react";
 
 const BOOKING_URL = "https://calendar.superhuman.com/book/11SzDnK01g1VgPEI2w/FtV5Q";
 
-const pythonCode = `<span class="token-keyword">from</span> memento_ai <span class="token-keyword">import</span> build_store, MemoryCreate
+// Dynamic code examples based on theme
+const getPythonCode = (theme: "dark" | "light") => `<span class="token-keyword">from</span> memento_ai <span class="token-keyword">import</span> build_store, MemoryCreate
 
 <span class="token-keyword">with</span> <span class="token-function">build_store</span>(<span class="token-string">"postgresql://..."</span>) <span class="token-keyword">as</span> store:
     <span class="token-comment"># Remember something</span>
     store.<span class="token-function">add</span>(namespace, <span class="token-function">MemoryCreate</span>(
-        text=<span class="token-string">"User prefers dark mode"</span>,
+        text=<span class="token-string">"User prefers ${theme} mode"</span>,
         durability=<span class="token-string">"core"</span>,  <span class="token-comment"># Never forget</span>
     ))
 
     <span class="token-comment"># Recall it later</span>
     memories = store.<span class="token-function">search</span>(namespace, <span class="token-string">"user preferences"</span>)`;
 
-const typescriptCode = `<span class="token-keyword">import</span> { MemoryStore, createOpenAIEmbeddings } <span class="token-keyword">from</span> <span class="token-string">'memento-ai'</span>;
+const getTypescriptCode = (theme: "dark" | "light") => `<span class="token-keyword">import</span> { MemoryStore, createOpenAIEmbeddings } <span class="token-keyword">from</span> <span class="token-string">'memento-ai'</span>;
 <span class="token-keyword">import</span> { neon } <span class="token-keyword">from</span> <span class="token-string">'@neondatabase/serverless'</span>;
 
 <span class="token-keyword">const</span> store = <span class="token-keyword">new</span> <span class="token-function">MemoryStore</span>(<span class="token-function">neon</span>(DATABASE_URL), embeddings);
 
 <span class="token-comment">// Remember something</span>
 <span class="token-keyword">await</span> store.<span class="token-function">add</span>(namespace, {
-  text: <span class="token-string">"User prefers dark mode"</span>,
+  text: <span class="token-string">"User prefers ${theme} mode"</span>,
   durability: <span class="token-string">"core"</span>,
 });
 
@@ -104,6 +107,8 @@ function AnimatedSection({ children, className = "" }: { children: React.ReactNo
 }
 
 export default function Home() {
+  const theme = useTheme();
+  
   return (
     <div className="min-h-screen bg-[var(--background)] transition-colors">
       {/* Navigation */}
@@ -403,12 +408,12 @@ export default function Home() {
                 {
                   label: "Python",
                   icon: <Code2 className="w-4 h-4" />,
-                  code: pythonCode,
+                  code: getPythonCode(theme),
                 },
                 {
                   label: "TypeScript",
                   icon: <Server className="w-4 h-4" />,
-                  code: typescriptCode,
+                  code: getTypescriptCode(theme),
                 },
                 {
                   label: "MCP",
@@ -469,6 +474,12 @@ export default function Home() {
               icon={<Zap className="w-6 h-6" />}
               title="Edge-Ready"
               description="TypeScript client works with Neon serverless on Cloudflare Workers. Sub-100ms latency."
+            />
+            <BentoCard
+              icon={<Wand2 className="w-6 h-6" />}
+              title="Auto-Extraction"
+              description="Pass in conversations, get structured memories out. LLM-powered extraction finds facts, preferences, and decisions automatically."
+              className="lg:col-span-2"
             />
           </BentoGrid>
         </AnimatedSection>
