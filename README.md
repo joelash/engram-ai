@@ -1,11 +1,11 @@
 <p align="center">
-  <img src="assets/logo.png" alt="memento-ai logo" width="200">
+  <img src="assets/memento-hero.png" alt="memento-ai - remember" width="600">
 </p>
 
 <h1 align="center">memento-ai</h1>
 
 <p align="center">
-  <em>Long-term semantic memory for LangGraph agents</em>
+  <em>Long-term semantic memory for AI agents. Don't forget.</em>
 </p>
 
 ---
@@ -26,7 +26,7 @@ Drop-in long-term memory with:
 - 📞 **Consult** ($500) — 2-hour architecture deep-dive
 - 🛠️ **Implementation** ($3-5k) — Full memory system, integrated + tested
 
-[Book a Call →](https://calendar.notion.so/meet/joelfriedman/ai-memory-consult)
+[Book a Call →](https://calendar.superhuman.com/book/11SzDnK01g1VgPEI2w/FtV5Q)
 
 ---
 
