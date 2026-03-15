@@ -194,6 +194,69 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Explainer Section - Plain English */}
+      <section className="py-20 px-6 border-t border-[var(--border)] bg-[var(--surface)]/30">
+        <AnimatedSection className="max-w-4xl mx-auto">
+          <motion.div variants={fadeInUp} className="text-center mb-12">
+            <h2 className="text-2xl md:text-3xl font-bold mb-4 text-[var(--foreground)]">
+              Wait, what does this actually do?
+            </h2>
+          </motion.div>
+
+          <motion.div variants={fadeInUp} className="grid md:grid-cols-3 gap-8">
+            {/* The Problem */}
+            <div className="text-center md:text-left">
+              <div className="w-12 h-12 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center justify-center mb-4 mx-auto md:mx-0">
+                <span className="text-2xl">🤷</span>
+              </div>
+              <h3 className="font-semibold text-lg mb-2 text-[var(--foreground)]">The Problem</h3>
+              <p className="text-[var(--muted)] text-sm leading-relaxed">
+                Talk to ChatGPT today, and tomorrow it has no idea who you are. AI apps start fresh every conversation — like a goldfish with amnesia.
+              </p>
+            </div>
+
+            {/* The Solution */}
+            <div className="text-center md:text-left">
+              <div className="w-12 h-12 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center mb-4 mx-auto md:mx-0">
+                <span className="text-2xl">💾</span>
+              </div>
+              <h3 className="font-semibold text-lg mb-2 text-[var(--foreground)]">The Solution</h3>
+              <p className="text-[var(--muted)] text-sm leading-relaxed">
+                memento-ai gives your AI a &quot;notebook&quot; it can actually write to and read from. It remembers users, preferences, past decisions — whatever matters.
+              </p>
+            </div>
+
+            {/* Why It Matters */}
+            <div className="text-center md:text-left">
+              <div className="w-12 h-12 rounded-xl bg-green-500/10 border border-green-500/20 flex items-center justify-center mb-4 mx-auto md:mx-0">
+                <span className="text-2xl">✨</span>
+              </div>
+              <h3 className="font-semibold text-lg mb-2 text-[var(--foreground)]">Why It Matters</h3>
+              <p className="text-[var(--muted)] text-sm leading-relaxed">
+                Your AI gets smarter over time. It provides personalized experiences, remembers context, and builds relationships — instead of starting from zero.
+              </p>
+            </div>
+          </motion.div>
+
+          {/* Simple Example */}
+          <motion.div variants={fadeInUp} className="mt-12 p-6 rounded-xl bg-[var(--background)] border border-[var(--border)]">
+            <p className="text-sm text-[var(--muted)] mb-4 text-center">Think of it like this:</p>
+            <div className="grid md:grid-cols-2 gap-6">
+              <div className="p-4 rounded-lg bg-red-500/5 border border-red-500/10">
+                <p className="text-sm font-medium text-red-400 mb-2">❌ Without memento-ai</p>
+                <p className="text-sm text-[var(--muted)] italic">&quot;Hi! I&apos;m your AI assistant. What&apos;s your name?&quot;</p>
+                <p className="text-xs text-[var(--muted)] mt-2">(asks this every. single. time.)</p>
+              </div>
+              <div className="p-4 rounded-lg bg-green-500/5 border border-green-500/10">
+                <p className="text-sm font-medium text-green-400 mb-2">✅ With memento-ai</p>
+                <p className="text-sm text-[var(--muted)] italic">&quot;Hey Sarah! Last week you asked about React performance. Want to continue that?&quot;</p>
+                <p className="text-xs text-[var(--muted)] mt-2">(actually remembers you)</p>
+              </div>
+            </div>
+          </motion.div>
+        </AnimatedSection>
+      </section>
+
       {/* Code Examples */}
       <section className="py-24 px-6 border-t border-[var(--border)]">
         <AnimatedSection className="max-w-6xl mx-auto">
