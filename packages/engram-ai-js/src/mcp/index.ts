@@ -22,6 +22,7 @@
 
 import type { MemoryStore } from '../store.js';
 import { Durability, MemoryType } from '../schema.js';
+import { extractMemories, toMemoryCreates } from '../extraction.js';
 
 /**
  * MCP Server configuration.
@@ -172,6 +173,24 @@ export class McpServer {
           required: ['id'],
         },
       },
+      {
+        name: 'extract',
+        description: 'Automatically extract and store memories from conversation text. Uses AI to identify facts, preferences, decisions, and other memorable information.',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            conversation: {
+              type: 'string',
+              description: 'The conversation text to extract memories from',
+            },
+            store: {
+              type: 'boolean',
+              description: 'Whether to automatically store extracted memories (default: true)',
+            },
+          },
+          required: ['conversation'],
+        },
+      },
     ];
   }
 
@@ -197,6 +216,9 @@ export class McpServer {
           break;
         case 'forget':
           result = await this.handleForget(args);
+          break;
+        case 'extract':
+          result = await this.handleExtract(args);
           break;
         default:
           throw new Error(`Unknown tool: ${name}`);
@@ -304,6 +326,53 @@ export class McpServer {
     return {
       success: deleted,
       message: deleted ? 'Memory deleted' : 'Memory not found',
+    };
+  }
+
+  private async handleExtract(args: Record<string, unknown>) {
+    const conversation = args.conversation as string;
+    const shouldStore = args.store !== false; // default true
+
+    // Extract memories from conversation
+    const result = await extractMemories(conversation);
+
+    if (result.memories.length === 0) {
+      return {
+        extracted: 0,
+        stored: 0,
+        memories: [],
+        message: 'No memorable information found in the conversation.',
+      };
+    }
+
+    // Store memories if requested
+    const storedMemories: Array<{ id: string; text: string; type: string; durability: string }> = [];
+
+    if (shouldStore) {
+      const memoryCreates = toMemoryCreates(result.memories);
+      for (const create of memoryCreates) {
+        const memory = await this.store.add(this.namespace, create);
+        storedMemories.push({
+          id: memory.id,
+          text: memory.text,
+          type: memory.memoryType ?? 'fact',
+          durability: memory.durability ?? 'situational',
+        });
+      }
+    }
+
+    return {
+      extracted: result.memories.length,
+      stored: storedMemories.length,
+      memories: shouldStore ? storedMemories : result.memories.map((m) => ({
+        text: m.text,
+        type: m.memoryType,
+        durability: m.durability,
+        confidence: m.confidence,
+      })),
+      message: shouldStore 
+        ? `Extracted and stored ${storedMemories.length} memories.`
+        : `Extracted ${result.memories.length} memories (not stored).`,
     };
   }
 

@@ -37,6 +37,7 @@
     "prepublishOnly": "npm run build"
   },
   "dependencies": {
+    "openai": "^4.77.0",
     "sql.js": "^1.14.1",
     "uuid": "^11.1.0"
   },

@@ -68,3 +68,8 @@ export type { OpenAIEmbeddingsConfig } from './embeddings.js';
 export { createSQLiteStore, SQLiteMemoryStore } from './sqlite-store.js';
 
 export type { SQLiteMemoryStoreConfig } from './sqlite-store.js';
+
+// Memory extraction
+export { extractMemories, toMemoryCreates } from './extraction.js';
+
+export type { ExtractedMemory, ExtractionResult } from './extraction.js';
