@@ -441,6 +441,60 @@ export default function Home() {
             />
           </motion.div>
 
+          {/* MCP Config Locations */}
+          <motion.div variants={fadeInUp} className="mt-6">
+            <p className="text-xs text-[var(--muted)] text-center mb-3">Add to your config file:</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-3xl mx-auto">
+              {[
+                { name: "Claude Desktop", path: "~/Library/Application Support/Claude/claude_desktop_config.json", icon: "icons/anthropic.svg", bg: "bg-[#FEF3E8]" },
+                { name: "Cursor", path: "~/.cursor/mcp.json", icon: "icons/cursor.svg", bg: "bg-white" },
+                { name: "Windsurf", path: "~/.codeium/windsurf/mcp_config.json", icon: "icons/windsurf.svg", bg: "bg-[#E6F7F7]" },
+                { name: "Continue", path: "~/.continue/config.json", icon: "icons/continue.svg", bg: "bg-[#EDE9FE]" },
+              ].map(({ name, path, icon, bg }) => (
+                <button
+                  key={name}
+                  className="group flex items-center gap-3 p-3 rounded-xl bg-[var(--surface)] border border-[var(--border)] hover:border-purple-500/50 active:bg-purple-500/10 transition-colors text-left"
+                  onClick={(e) => {
+                    const span = e.currentTarget.querySelector('.copy-label');
+                    if (navigator.clipboard) {
+                      navigator.clipboard.writeText(path).then(() => {
+                        if (span) {
+                          span.textContent = 'Copied!';
+                          setTimeout(() => { span.textContent = 'Copy'; }, 2000);
+                        }
+                      });
+                    } else {
+                      // Fallback for non-HTTPS
+                      const ta = document.createElement('textarea');
+                      ta.value = path;
+                      document.body.appendChild(ta);
+                      ta.select();
+                      document.execCommand('copy');
+                      document.body.removeChild(ta);
+                      if (span) {
+                        span.textContent = 'Copied!';
+                        setTimeout(() => { span.textContent = 'Copy'; }, 2000);
+                      }
+                    }
+                  }}
+                >
+                  <div className={`w-10 h-10 rounded-lg flex-shrink-0 ${bg} p-2 flex items-center justify-center`}>
+                    <img src={`${basePath}/${icon}`} alt={name} className="w-6 h-6" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <span className="text-xs font-medium text-[var(--foreground)] block">{name}</span>
+                    <code className="text-[10px] text-[var(--muted)] group-hover:text-purple-400 transition-colors break-all">
+                      {path}
+                    </code>
+                  </div>
+                  <span className="copy-label text-[10px] text-purple-400 flex-shrink-0">
+                    Copy
+                  </span>
+                </button>
+              ))}
+            </div>
+          </motion.div>
+
           {/* Platform badges */}
           <motion.div variants={fadeInUp} className="flex flex-wrap items-center justify-center gap-4 mt-10">
             {[
