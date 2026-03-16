@@ -41,8 +41,7 @@ jobs:
       - name: Build
         working-directory: landing
         run: pnpm build
-        env:
-          NEXT_PUBLIC_BASE_PATH: /memable
+        # No basePath needed - using custom domain memable.ai
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
