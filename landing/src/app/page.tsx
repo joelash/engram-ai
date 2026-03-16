@@ -446,11 +446,11 @@ export default function Home() {
             <p className="text-xs text-[var(--muted)] text-center mb-3">Add to your config file:</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-3xl mx-auto">
               {[
-                { name: "Claude Desktop", path: "~/Library/Application Support/Claude/claude_desktop_config.json", icon: "icons/anthropic.svg", bg: "bg-[#FEF3E8]" },
-                { name: "Cursor", path: "~/.cursor/mcp.json", icon: "icons/cursor.svg", bg: "bg-white" },
-                { name: "Windsurf", path: "~/.codeium/windsurf/mcp_config.json", icon: "icons/windsurf.svg", bg: "bg-[#E6F7F7]" },
-                { name: "Continue", path: "~/.continue/config.json", icon: "icons/continue.svg", bg: "bg-[#EDE9FE]" },
-              ].map(({ name, path, icon, bg }) => (
+                { name: "Claude Desktop", path: "~/Library/Application Support/Claude/claude_desktop_config.json", icon: "icons/claude.png" },
+                { name: "Cursor", path: "~/.cursor/mcp.json", icon: "icons/cursor.png" },
+                { name: "Windsurf", path: "~/.codeium/windsurf/mcp_config.json", icon: "icons/windsurf.png" },
+                { name: "Continue", path: "~/.continue/config.json", icon: "icons/continue.png" },
+              ].map(({ name, path, icon }) => (
                 <button
                   key={name}
                   className="group flex items-center gap-3 p-3 rounded-xl bg-[var(--surface)] border border-[var(--border)] hover:border-purple-500/50 active:bg-purple-500/10 transition-colors text-left"
@@ -478,9 +478,7 @@ export default function Home() {
                     }
                   }}
                 >
-                  <div className={`w-10 h-10 rounded-lg flex-shrink-0 ${bg} p-2 flex items-center justify-center`}>
-                    <img src={`${basePath}/${icon}`} alt={name} className="w-6 h-6" />
-                  </div>
+                  <img src={`${basePath}/${icon}`} alt={name} className="w-10 h-10 rounded-lg flex-shrink-0" />
                   <div className="min-w-0 flex-1">
                     <span className="text-xs font-medium text-[var(--foreground)] block">{name}</span>
                     <code className="text-[10px] text-[var(--muted)] group-hover:text-purple-400 transition-colors break-all">
