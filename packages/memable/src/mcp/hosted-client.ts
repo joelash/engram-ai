@@ -34,6 +34,34 @@ export class HostedMcpClient {
     });
   }
 
+  async boot(args: {
+    context?: string;
+    include_recent?: boolean;
+  } = {}): Promise<{
+    booted: boolean;
+    total_memories: number;
+    summary: string;
+    core: Array<{ id: string; text: string; type: string }>;
+    recent: Array<{ id: string; text: string; type: string }>;
+    contextual: Array<{ id: string; text: string; type: string; relevance?: number }>;
+    tip: string;
+  }> {
+    const res = await this.fetch('/mcp/tools/boot', {
+      method: 'POST',
+      body: JSON.stringify({
+        context: args.context,
+        include_recent: args.include_recent ?? true,
+      }),
+    });
+
+    if (!res.ok) {
+      const error = await res.text();
+      throw new Error(`Boot failed: ${error}`);
+    }
+
+    return res.json();
+  }
+
   async remember(args: {
     text: string;
     type?: string;

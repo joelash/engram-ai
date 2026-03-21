@@ -65,6 +65,17 @@ async function runHostedMode() {
           result = {
             tools: [
               {
+                name: 'boot',
+                description: 'Load memory context at session start. Call this at the beginning of every conversation to recall what you know about the user.',
+                inputSchema: {
+                  type: 'object',
+                  properties: {
+                    context: { type: 'string', description: 'Optional context about the current conversation topic' },
+                    include_recent: { type: 'boolean', description: 'Include memories from last 24 hours (default: true)' },
+                  },
+                },
+              },
+              {
                 name: 'remember',
                 description: 'Store a new memory.',
                 inputSchema: {
@@ -169,6 +180,12 @@ async function handleHostedToolCall(
     let result: unknown;
 
     switch (name) {
+      case 'boot':
+        result = await client.boot({
+          context: args.context as string | undefined,
+          include_recent: args.include_recent as boolean | undefined,
+        });
+        break;
       case 'remember':
         result = await client.remember({
           text: args.text as string,
