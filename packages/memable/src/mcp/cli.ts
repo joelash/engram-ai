@@ -33,7 +33,8 @@ type AnyStore = MemoryStore | SQLiteMemoryStore;
  */
 async function runHostedMode() {
   const client = createHostedClient();
-  console.error(`[memable] Hosted mode: ${process.env.MEMABLE_API_URL}`);
+  const apiUrl = process.env.MEMABLE_API_URL || 'https://api.memable.ai';
+  console.error(`[memable] Hosted mode: ${apiUrl}`);
 
   // Create a minimal MCP handler that proxies to hosted API
   const handleMessage = async (message: {

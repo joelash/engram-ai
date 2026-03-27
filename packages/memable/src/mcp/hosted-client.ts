@@ -177,22 +177,31 @@ export class HostedMcpClient {
   }
 }
 
+/** Default production API URL */
+const DEFAULT_API_URL = 'https://api.memable.ai';
+
 /**
  * Check if hosted mode is configured.
+ * Hosted mode is enabled if:
+ * - --hosted flag is passed, OR
+ * - MEMABLE_API_KEY is set
  */
 export function isHostedMode(): boolean {
-  return !!(process.env.MEMABLE_API_URL && process.env.MEMABLE_API_KEY);
+  const hasHostedFlag = process.argv.includes('--hosted');
+  const hasApiKey = !!process.env.MEMABLE_API_KEY;
+  return hasHostedFlag || hasApiKey;
 }
 
 /**
  * Create a hosted client from environment variables.
+ * MEMABLE_API_URL defaults to production if not set.
  */
 export function createHostedClient(): HostedMcpClient {
-  const apiUrl = process.env.MEMABLE_API_URL;
+  const apiUrl = process.env.MEMABLE_API_URL || DEFAULT_API_URL;
   const apiKey = process.env.MEMABLE_API_KEY;
 
-  if (!apiUrl || !apiKey) {
-    throw new Error('MEMABLE_API_URL and MEMABLE_API_KEY are required for hosted mode');
+  if (!apiKey) {
+    throw new Error('MEMABLE_API_KEY is required for hosted mode. Get your key at https://app.memable.ai');
   }
 
   return new HostedMcpClient({ apiUrl, apiKey });
