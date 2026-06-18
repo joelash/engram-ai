@@ -86,18 +86,23 @@ async function readJsonlFile(filePath: string): Promise<TranscriptLine[]> {
   return lines;
 }
 
+interface ConversationMessage {
+  role: 'user' | 'assistant';
+  content: string;
+}
+
 /**
- * Build a plain-text conversation string from transcript lines.
+ * Parse transcript lines into a proper messages array.
  * Only includes user/assistant turns with text content.
  */
-function buildConversationText(lines: TranscriptLine[]): string {
-  const parts: string[] = [];
+function buildConversationMessages(lines: TranscriptLine[]): ConversationMessage[] {
+  const messages: ConversationMessage[] = [];
 
   for (const line of lines) {
     if (line.type !== 'user' && line.type !== 'assistant') continue;
     if (!line.message?.content) continue;
 
-    const role = line.type === 'user' ? 'User' : 'Assistant';
+    const role = line.type as 'user' | 'assistant';
     const textParts: string[] = [];
 
     for (const item of line.message.content) {
@@ -108,18 +113,18 @@ function buildConversationText(lines: TranscriptLine[]): string {
     }
 
     if (textParts.length > 0) {
-      parts.push(`${role}: ${textParts.join('\n')}`);
+      messages.push({ role, content: textParts.join('\n') });
     }
   }
 
-  return parts.join('\n\n');
+  return messages;
 }
 
 /**
  * Run extract-session in hosted mode.
  */
 async function runHostedExtractSession(
-  conversationText: string,
+  messages: ConversationMessage[],
   projectName: string,
   sessionId: string,
   cwd: string
@@ -129,8 +134,9 @@ async function runHostedExtractSession(
 
   // POST to /mcp/tools/extract
   const extractResult = await client.extract({
-    conversation: conversationText,
+    messages,
     store: true,
+    project_name: projectName,
   });
 
   const memoriesExtracted = extractResult.count ?? extractResult.memories?.length ?? 0;
@@ -164,11 +170,14 @@ async function runHostedExtractSession(
  * Run extract-session in local mode.
  */
 async function runLocalExtractSession(
-  conversationText: string,
+  messages: ConversationMessage[],
   projectName: string | undefined,
   sessionId: string,
   cwd: string
 ): Promise<void> {
+  const conversationText = messages
+    .map(m => `${m.role === 'user' ? 'User' : 'Assistant'}: ${m.content}`)
+    .join('\n\n');
   const providerType = (process.env.MEMABLE_EMBEDDINGS as EmbeddingProviderType) || 'auto';
 
   const embeddings = await createEmbeddings(providerType);
@@ -240,11 +249,11 @@ export async function runExtractSession(): Promise<void> {
     // 2. Read and parse the JSONL transcript
     const lines = await readJsonlFile(transcript_path);
 
-    // 3-5. Build conversation text
-    const conversationText = buildConversationText(lines);
+    // 3-5. Build conversation messages array
+    const messages = buildConversationMessages(lines);
 
-    if (!conversationText.trim()) {
-      console.error('[memable] extract-session: no usable conversation text found in transcript');
+    if (messages.length === 0) {
+      console.error('[memable] extract-session: no usable conversation messages found in transcript');
       return;
     }
 
@@ -267,9 +276,9 @@ export async function runExtractSession(): Promise<void> {
 
     // 7/8. Store memories via hosted or local mode
     if (isHostedMode()) {
-      await runHostedExtractSession(conversationText, projectName ?? path.basename(cwd), sessionId, cwd);
+      await runHostedExtractSession(messages, projectName ?? path.basename(cwd), sessionId, cwd);
     } else {
-      await runLocalExtractSession(conversationText, projectName, sessionId, cwd);
+      await runLocalExtractSession(messages, projectName, sessionId, cwd);
     }
   } catch (error) {
     // 9. Log errors to stderr, exit 0 so hook doesn't surface errors to user

@@ -40,6 +40,23 @@ async function runHostedMode() {
   const apiUrl = process.env.MEMABLE_API_URL || 'https://api.memable.ai';
   console.error(`[memable] Hosted mode: ${apiUrl}`);
 
+  // Detect project name (same logic as local mode)
+  let projectName: string | undefined;
+  if (process.env.MEMABLE_PROJECT) {
+    projectName = process.env.MEMABLE_PROJECT;
+  } else {
+    try {
+      const { execFileSync } = await import('child_process');
+      execFileSync('git', ['rev-parse', '--git-dir'], { stdio: 'ignore', cwd: process.cwd() });
+      projectName = path.basename(process.cwd());
+    } catch {
+      // Not a git repo — no project scope
+    }
+  }
+  if (projectName) {
+    console.error(`[memable] Project scope: ${projectName}`);
+  }
+
   // Create a minimal MCP handler that proxies to hosted API
   const handleMessage = async (message: {
     jsonrpc: '2.0';
@@ -147,7 +164,7 @@ async function runHostedMode() {
             name: string;
             arguments: Record<string, unknown>;
           };
-          result = await handleHostedToolCall(client, name, args);
+          result = await handleHostedToolCall(client, name, args, projectName);
           break;
 
         default:
@@ -179,7 +196,8 @@ async function runHostedMode() {
 async function handleHostedToolCall(
   client: HostedMcpClient,
   name: string,
-  args: Record<string, unknown>
+  args: Record<string, unknown>,
+  projectName?: string
 ): Promise<{ content: Array<{ type: 'text'; text: string }> }> {
   try {
     let result: unknown;
@@ -189,6 +207,7 @@ async function handleHostedToolCall(
         result = await client.boot({
           context: args.context as string | undefined,
           include_recent: args.include_recent as boolean | undefined,
+          project_name: projectName,
         });
         break;
       case 'remember':
@@ -203,6 +222,7 @@ async function handleHostedToolCall(
           query: args.query as string,
           limit: args.limit as number | undefined,
           type: args.type as string | undefined,
+          project_name: projectName,
         });
         break;
       case 'list_memories':
@@ -215,7 +235,7 @@ async function handleHostedToolCall(
         break;
       case 'extract':
         result = await client.extract({
-          conversation: args.conversation as string,
+          messages: [{ role: 'user', content: args.conversation as string }],
           store: args.store as boolean | undefined,
         });
         break;

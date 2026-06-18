@@ -37,6 +37,7 @@ export class HostedMcpClient {
   async boot(args: {
     context?: string;
     include_recent?: boolean;
+    project_name?: string;
   } = {}): Promise<{
     booted: boolean;
     total_memories: number;
@@ -51,6 +52,7 @@ export class HostedMcpClient {
       body: JSON.stringify({
         context: args.context,
         include_recent: args.include_recent ?? true,
+        project_name: args.project_name,
       }),
     });
 
@@ -92,6 +94,7 @@ export class HostedMcpClient {
     query: string;
     limit?: number;
     type?: string;
+    project_name?: string;
   }): Promise<{
     memories: Array<{
       id: string;
@@ -105,6 +108,7 @@ export class HostedMcpClient {
       body: JSON.stringify({
         query: args.query,
         limit: args.limit || 5,
+        project_name: args.project_name,
       }),
     });
 
@@ -155,8 +159,9 @@ export class HostedMcpClient {
   }
 
   async extract(args: {
-    conversation: string;
+    messages: Array<{ role: string; content: string }>;
     store?: boolean;
+    project_name?: string;
   }): Promise<{
     memories: Array<{ text: string; memory_type: string }>;
     count: number;
@@ -164,8 +169,9 @@ export class HostedMcpClient {
     const res = await this.fetch('/mcp/tools/extract', {
       method: 'POST',
       body: JSON.stringify({
-        messages: [{ role: 'user', content: args.conversation }],
+        messages: args.messages,
         store: args.store ?? true,
+        project_name: args.project_name,
       }),
     });
 
