@@ -153,7 +153,18 @@ class Memory(BaseModel):
         """Reconstruct from stored dict."""
 
         def parse_dt(v: str | None) -> datetime | None:
-            return datetime.fromisoformat(v) if v else None
+            if not v:
+                return None
+            dt = datetime.fromisoformat(v)
+            # Coerce naive datetimes to UTC-aware. ``is_valid`` compares
+            # ``datetime.now(UTC)`` (tz-aware) against stored timestamps; a
+            # naive value raises ``TypeError: can't compare offset-naive and
+            # offset-aware datetimes``. The dashboard's ``list_memories``
+            # catches that exception and silently skips the whole namespace,
+            # hiding every memory with a naive ``valid_from`` (Plaud
+            # recordings pass timestamps without tzinfo). Treat naive as UTC,
+            # which matches the writer's intent for these fields.
+            return dt if dt.tzinfo else dt.replace(tzinfo=UTC)
 
         def parse_uuid(v: str | None) -> UUID | None:
             return UUID(v) if v else None
