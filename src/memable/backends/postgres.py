@@ -2,6 +2,7 @@
 PostgreSQL backend using LangGraph's PostgresStore with pgvector.
 """
 
+import logging
 import os
 from urllib.parse import parse_qs, urlencode, urlparse, urlunparse
 from typing import TYPE_CHECKING, Any
@@ -13,8 +14,14 @@ from memable.backends.base import BaseStore, StoreItem
 if TYPE_CHECKING:
     from langchain_core.embeddings import Embeddings
 
+logger = logging.getLogger(__name__)
+
 DEFAULT_EMBED_MODEL = "text-embedding-3-small"
 DEFAULT_EMBED_DIMS = 1536
+
+# Hosted Postgres providers expose their transaction pooler on a sibling
+# hostname; the direct endpoint is the same name without this marker.
+_POOLER_MARKER = "-pooler."
 
 
 def _add_schema_to_conn_string(conn_str: str, schema: str) -> str:
@@ -51,6 +58,43 @@ def _add_schema_to_conn_string(conn_str: str, schema: str) -> str:
     return urlunparse(new_parsed)
 
 
+def _host_part(conn_str: str) -> str | None:
+    """Return the host[:port] segment of a URL-style connection string."""
+    _, sep, rest = conn_str.partition("://")
+    if not sep:
+        return None
+    netloc, _, _ = rest.partition("/")
+    _, _, hostport = netloc.rpartition("@")
+    return hostport
+
+
+def _is_pooled_conn_string(conn_str: str) -> bool:
+    """Whether the connection string points at a transaction pooler endpoint."""
+    hostport = _host_part(conn_str)
+    return hostport is not None and _POOLER_MARKER in hostport
+
+
+def _to_direct_conn_string(conn_str: str) -> str:
+    """
+    Rewrite a pooled connection string to its direct endpoint.
+
+    Returns the input unchanged if it is not a pooled URL. Credentials are
+    preserved byte-for-byte, so percent-encoded passwords survive intact.
+
+    Example:
+        >>> _to_direct_conn_string("postgresql://u:p@ep-a-pooler.region.tld/db")
+        'postgresql://u:p@ep-a.region.tld/db'
+    """
+    if not _is_pooled_conn_string(conn_str):
+        return conn_str
+
+    scheme, sep, rest = conn_str.partition("://")
+    netloc, slash, tail = rest.partition("/")
+    creds, at, hostport = netloc.rpartition("@")
+    hostport = hostport.replace(_POOLER_MARKER, ".", 1)
+    return f"{scheme}{sep}{creds}{at}{hostport}{slash}{tail}"
+
+
 class PostgresBackend(BaseStore):
     """
     PostgreSQL backend with pgvector for semantic search.
@@ -84,9 +128,24 @@ class PostgresBackend(BaseStore):
         Note:
             When using `schema`, the schema must already exist in the database.
             Tables will be created in that schema when `setup()` is called.
+
+            `schema` requires a direct (unpooled) connection. It is delivered
+            as a `search_path` startup option, and a transaction pooler cannot
+            honour that: its backends are shared between clients, so the
+            setting would leak to whoever is served next. If `conn_str` names a
+            pooler endpoint it is rewritten to the direct one automatically.
         """
         # Apply schema to connection string if provided
         if schema:
+            if _is_pooled_conn_string(conn_str):
+                conn_str = _to_direct_conn_string(conn_str)
+                logger.warning(
+                    "schema=%r requires a direct connection because it is set "
+                    "via the search_path startup option, which transaction "
+                    "poolers reject; using the direct endpoint instead of the "
+                    "pooled one. Pass the direct host to silence this.",
+                    schema,
+                )
             conn_str = _add_schema_to_conn_string(conn_str, schema)
 
         self._conn_str = conn_str
@@ -108,15 +167,29 @@ class PostgresBackend(BaseStore):
     def _ensure_connected(self) -> PostgresStore:
         """Ensure we have an active connection."""
         if self._store is None:
-            self._context = PostgresStore.from_conn_string(
-                self._conn_str,
-                index={
-                    "dims": self._dims,
-                    "embed": self._get_embeddings(),
-                    "fields": self._embed_fields,
-                },
-            )
-            self._store = self._context.__enter__()
+            try:
+                self._context = PostgresStore.from_conn_string(
+                    self._conn_str,
+                    index={
+                        "dims": self._dims,
+                        "embed": self._get_embeddings(),
+                        "fields": self._embed_fields,
+                    },
+                )
+                self._store = self._context.__enter__()
+            except Exception as e:
+                # A pooler we did not recognise by hostname reports this as a
+                # wall of per-host connection failures; say what it means.
+                if self._schema and "startup parameter" in str(e):
+                    raise ConnectionError(
+                        f"Could not connect with schema={self._schema!r}: the "
+                        "server rejected the search_path startup option that "
+                        "schema isolation relies on. Transaction poolers do "
+                        "this because they cannot carry per-client session "
+                        "state. Use a direct (unpooled) connection, or drop "
+                        "`schema` to use the connection's default search_path."
+                    ) from e
+                raise
         return self._store
 
     def setup(self) -> None:
